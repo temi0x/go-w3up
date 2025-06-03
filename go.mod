@@ -1,4 +1,4 @@
-module github.com/storacha/go-w3up
+module github.com/storacha/guppy
 
 go 1.23.3
 
