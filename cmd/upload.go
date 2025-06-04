@@ -23,9 +23,9 @@ import (
 	"github.com/storacha/go-ucanto/core/result"
 	"github.com/storacha/go-ucanto/did"
 	"github.com/storacha/go-ucanto/principal"
-	"github.com/storacha/go-w3up/car/sharding"
-	"github.com/storacha/go-w3up/client"
-	"github.com/storacha/go-w3up/cmd/util"
+	"github.com/storacha/guppy/car/sharding"
+	"github.com/storacha/guppy/client"
+	"github.com/storacha/guppy/cmd/util"
 	"github.com/urfave/cli/v2"
 )
 

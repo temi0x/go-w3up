@@ -33,8 +33,8 @@ import (
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
 	ucanhttp "github.com/storacha/go-ucanto/transport/http"
 	"github.com/storacha/go-ucanto/ucan"
-	"github.com/storacha/go-w3up/capability/uploadadd"
-	"github.com/storacha/go-w3up/capability/uploadlist"
+	"github.com/storacha/guppy/capability/uploadadd"
+	"github.com/storacha/guppy/capability/uploadlist"
 )
 
 // UploadAdd registers an "upload" with the service. The issuer needs proof of

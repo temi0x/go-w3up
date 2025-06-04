@@ -1,11 +1,11 @@
-# go-w3up
+# guppy
 
 A w3up client in golang. ⚠️ Heavily WIP.
 
 ## Install
 
 ```sh
-go get github.com/storacha/go-w3up
+go get github.com/storacha/guppy
 ```
 
 ## Usage
@@ -27,8 +27,8 @@ import (
 
   "github.com/web3-storage/go-ucanto/did"
   "github.com/web3-storage/go-ucanto/principal/ed25519/signer"
-  "github.com/storacha/go-w3up/client"
-  "github.com/storacha/go-w3up/delegation"
+  "github.com/storacha/guppy/client"
+  "github.com/storacha/guppy/delegation"
 )
 
 // private key to sign invocation UCAN with
@@ -122,11 +122,11 @@ Proofs are delegations to your DID enabling it to perform tasks. Currently the b
 
 ## API
 
-[pkg.go.dev Reference](https://pkg.go.dev/github.com/storacha/go-w3up)
+[pkg.go.dev Reference](https://pkg.go.dev/github.com/storacha/guppy)
 
 ## Contributing
 
-Feel free to join in. All welcome. Please [open an issue](https://github.com/storacha/go-w3up/issues)!
+Feel free to join in. All welcome. Please [open an issue](https://github.com/storacha/guppy/issues)!
 
 ## License
 
