@@ -20,7 +20,7 @@ func TestRoundTripAgentData(t *testing.T) {
 
 	del, err := greet.Delegate(
 		signer,
-		simplePrincipal{did: audienceDid},
+		audienceDid,
 		signer.DID().String(),
 		greetCaveats{
 			greeting: "Hi, there!",

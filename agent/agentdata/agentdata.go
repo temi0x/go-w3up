@@ -24,13 +24,13 @@ type agentDataSerialized struct {
 }
 
 func (ad AgentData) MarshalJSON() ([]byte, error) {
-	delegations := make([][]byte, len(ad.Delegations))
-	for i, d := range ad.Delegations {
+	delegations := make([][]byte, 0, len(ad.Delegations))
+	for _, d := range ad.Delegations {
 		b, err := io.ReadAll(d.Archive())
 		if err != nil {
 			return nil, fmt.Errorf("reading delegation archive: %w", err)
 		}
-		delegations[i] = b
+		delegations = append(delegations, b)
 	}
 
 	return json.Marshal(agentDataSerialized{

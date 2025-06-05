@@ -8,7 +8,6 @@ import (
 	"github.com/storacha/go-libstoracha/capabilities/types"
 	"github.com/storacha/go-ucanto/core/ipld"
 	"github.com/storacha/go-ucanto/core/schema"
-	"github.com/storacha/go-ucanto/did"
 	"github.com/storacha/go-ucanto/validator"
 	"github.com/storacha/guppy/agent/agentdata"
 )
@@ -19,14 +18,6 @@ type greetCaveats struct {
 
 func (c greetCaveats) ToIPLD() (datamodel.Node, error) {
 	return ipld.WrapWithRecovery(&c, nil)
-}
-
-type simplePrincipal struct {
-	did did.DID
-}
-
-func (sp simplePrincipal) DID() did.DID {
-	return sp.did
 }
 
 var greetSchema = []byte(`
@@ -58,7 +49,7 @@ var greet = validator.NewCapability(
 	nil,
 )
 
-var delegationsCids = func(d agentdata.AgentData) []ipld.Link {
+func delegationsCids(d agentdata.AgentData) []ipld.Link {
 	cids := make([]ipld.Link, len(d.Delegations))
 	for i, d := range d.Delegations {
 		cids[i] = d.Link()

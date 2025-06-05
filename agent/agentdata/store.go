@@ -5,22 +5,17 @@ import (
 	"os"
 )
 
-type AgentDataStore interface {
-	Write(AgentData) error
-	Read() (AgentData, error)
-}
-
-type FSAgentDataStore struct {
+type FSStore struct {
 	path string
 }
 
-func NewFSAgentDataStore(path string) *FSAgentDataStore {
-	return &FSAgentDataStore{
+func NewFSStore(path string) *FSStore {
+	return &FSStore{
 		path: path,
 	}
 }
 
-func (s *FSAgentDataStore) Write(data AgentData) error {
+func (s *FSStore) Write(data AgentData) error {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -29,7 +24,7 @@ func (s *FSAgentDataStore) Write(data AgentData) error {
 	return os.WriteFile(s.path, b, 0600)
 }
 
-func (s *FSAgentDataStore) Read() (AgentData, error) {
+func (s *FSStore) Read() (AgentData, error) {
 	b, err := os.ReadFile(s.path)
 	if err != nil {
 		return AgentData{}, err

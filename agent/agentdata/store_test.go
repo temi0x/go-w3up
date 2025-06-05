@@ -25,7 +25,7 @@ func TestWriteReadAgentData(t *testing.T) {
 
 	del, err := greet.Delegate(
 		signer,
-		simplePrincipal{did: audienceDid},
+		audienceDid,
 		signer.DID().String(),
 		greetCaveats{
 			greeting: "Hi, there!",
@@ -38,10 +38,10 @@ func TestWriteReadAgentData(t *testing.T) {
 		Delegations: []delegation.Delegation{del},
 	}
 
-	err = agentdata.NewFSAgentDataStore(dataFilePath).Write(agentData)
+	err = agentdata.NewFSStore(dataFilePath).Write(agentData)
 	require.NoError(t, err)
 
-	agentDataReturned, err := agentdata.NewFSAgentDataStore(dataFilePath).Read()
+	agentDataReturned, err := agentdata.NewFSStore(dataFilePath).Read()
 	require.NoError(t, err)
 
 	require.Equal(t, agentData.Principal, agentDataReturned.Principal)
