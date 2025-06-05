@@ -1,7 +1,7 @@
 package agentdata_test
 
 import (
-	"os"
+	"path"
 	"testing"
 
 	"github.com/storacha/go-ucanto/core/delegation"
@@ -10,11 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const dataFilePath = "testdata/agentdata.json"
-
 func TestWriteReadAgentData(t *testing.T) {
-	err := os.RemoveAll(dataFilePath)
-	require.NoError(t, err)
+	dataFilePath := path.Join(t.TempDir(), "agentdata.json")
 
 	agentPrincipal, err := signer.Generate()
 	require.NoError(t, err)
