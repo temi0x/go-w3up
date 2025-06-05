@@ -5,32 +5,22 @@ import (
 	"os"
 )
 
-type FSStore struct {
-	path string
-}
-
-func NewFSStore(path string) *FSStore {
-	return &FSStore{
-		path: path,
-	}
-}
-
-func (s *FSStore) Write(data AgentData) error {
-	b, err := json.Marshal(data)
+func (ad AgentData) WriteToFile(path string) error {
+	b, err := json.Marshal(ad)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(s.path, b, 0600)
+	return os.WriteFile(path, b, 0600)
 }
 
-func (s *FSStore) Read() (AgentData, error) {
-	b, err := os.ReadFile(s.path)
+func ReadFromFile(path string) (AgentData, error) {
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return AgentData{}, err
 	}
 
-	var data AgentData
-	json.Unmarshal(b, &data)
-	return data, nil
+	var ad AgentData
+	json.Unmarshal(b, &ad)
+	return ad, nil
 }

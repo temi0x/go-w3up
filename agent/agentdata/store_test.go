@@ -27,10 +27,10 @@ func TestWriteReadAgentData(t *testing.T) {
 		Delegations: []delegation.Delegation{del},
 	}
 
-	err = agentdata.NewFSStore(dataFilePath).Write(agentData)
+	err = agentData.WriteToFile(dataFilePath)
 	require.NoError(t, err)
 
-	agentDataReturned, err := agentdata.NewFSStore(dataFilePath).Read()
+	agentDataReturned, err := agentdata.ReadFromFile(dataFilePath)
 	require.NoError(t, err)
 
 	require.Equal(t, agentData.Principal, agentDataReturned.Principal)
