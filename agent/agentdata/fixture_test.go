@@ -1,53 +1,52 @@
 package agentdata_test
 
 import (
-	"fmt"
+	"crypto/rand"
 
-	"github.com/ipld/go-ipld-prime/datamodel"
-	ipldschema "github.com/ipld/go-ipld-prime/schema"
+	"github.com/multiformats/go-multihash"
+	"github.com/storacha/go-libstoracha/capabilities/space/blob"
 	"github.com/storacha/go-libstoracha/capabilities/types"
+	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/core/ipld"
-	"github.com/storacha/go-ucanto/core/schema"
-	"github.com/storacha/go-ucanto/validator"
+	"github.com/storacha/go-ucanto/did"
+	"github.com/storacha/go-ucanto/principal/ed25519/signer"
 	"github.com/storacha/guppy/agent/agentdata"
 )
 
-type greetCaveats struct {
-	greeting string
-}
-
-func (c greetCaveats) ToIPLD() (datamodel.Node, error) {
-	return ipld.WrapWithRecovery(&c, nil)
-}
-
-var greetSchema = []byte(`
-type greetCaveats struct {
-		greeting String
-}
-`)
-
-var greetTS = mustLoadTS()
-
-func mustLoadTS() *ipldschema.TypeSystem {
-	ts, err := types.LoadSchemaBytes(greetSchema)
+func newDelegation() (delegation.Delegation, error) {
+	signer, err := signer.Generate()
 	if err != nil {
-		panic(fmt.Errorf("loading greet schema: %w", err))
+		return nil, err
 	}
-	return ts
+
+	audienceDid, err := did.Parse("did:mailto:example.com:alice")
+	if err != nil {
+		return nil, err
+	}
+
+	bytes := make([]byte, 128)
+	_, err = rand.Read(bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	digest, err := multihash.Sum(bytes, multihash.SHA2_256, -1)
+	if err != nil {
+		return nil, err
+	}
+
+	return blob.Add.Delegate(
+		signer,
+		audienceDid,
+		signer.DID().String(),
+		blob.AddCaveats{
+			Blob: types.Blob{
+				Digest: digest,
+				Size:   uint64(len(bytes)),
+			},
+		},
+	)
 }
-
-func greetCaveatsType() ipldschema.Type {
-	return greetTS.TypeByName("greetCaveats")
-}
-
-var greetCaveatsReader = schema.Struct[greetCaveats](greetCaveatsType(), nil, types.Converters...)
-
-var greet = validator.NewCapability(
-	"speak/greet",
-	schema.DIDString(),
-	greetCaveatsReader,
-	nil,
-)
 
 func delegationsCids(d agentdata.AgentData) []ipld.Link {
 	cids := make([]ipld.Link, len(d.Delegations))

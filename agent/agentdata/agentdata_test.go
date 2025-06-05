@@ -5,31 +5,21 @@ import (
 	"testing"
 
 	"github.com/storacha/go-ucanto/core/delegation"
-	"github.com/storacha/go-ucanto/did"
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
 	"github.com/storacha/guppy/agent/agentdata"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRoundTripAgentData(t *testing.T) {
-	signer, err := signer.Generate()
+	agentPrincipal, err := signer.Generate()
 	require.NoError(t, err)
 
-	audienceDid, err := did.Parse("did:mailto:example.com:alice")
-	require.NoError(t, err)
+	del, err := newDelegation()
 
-	del, err := greet.Delegate(
-		signer,
-		audienceDid,
-		signer.DID().String(),
-		greetCaveats{
-			greeting: "Hi, there!",
-		},
-	)
 	require.NoError(t, err)
 
 	agentData := agentdata.AgentData{
-		Principal:   signer,
+		Principal:   agentPrincipal,
 		Delegations: []delegation.Delegation{del},
 	}
 
