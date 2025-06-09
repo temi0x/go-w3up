@@ -18,6 +18,20 @@ type ClientConfig struct {
 	prf  []delegation.Delegation
 }
 
+// NewClientConfig creates a new ClientConfig with the given options. By
+// default, the connection is set to [DefaultConnection].
+func NewClientConfig(options ...Option) (ClientConfig, error) {
+	cfg := ClientConfig{conn: DefaultConnection}
+
+	for _, opt := range options {
+		if err := opt(&cfg); err != nil {
+			return ClientConfig{}, err
+		}
+	}
+
+	return cfg, nil
+}
+
 // WithConnection configures the connection to execute the invocation on.
 func WithConnection(conn client.Connection) Option {
 	return func(cfg *ClientConfig) error {
