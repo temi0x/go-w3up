@@ -33,104 +33,9 @@ import (
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
 	ucanhttp "github.com/storacha/go-ucanto/transport/http"
 	"github.com/storacha/go-ucanto/ucan"
-	"github.com/storacha/guppy/pkg/capability/uploadadd"
-	"github.com/storacha/guppy/pkg/capability/uploadlist"
 )
 
-// UploadAdd registers an "upload" with the service. The issuer needs proof of
-// `upload/add` delegated capability.
-//
-// Required delegated capability proofs: `upload/add`
-//
-// The `issuer` is the signing authority that is issuing the UCAN invocation.
-//
-// The `space` is the resource the invocation applies to. It is typically the
-// DID of a space.
-//
-// The `params` are caveats required to perform an `upload/add` invocation.
-func UploadAdd(issuer principal.Signer, space did.DID, params uploadadd.Caveat, options ...Option) (receipt.Receipt[*uploadadd.Success, *uploadadd.Failure], error) {
-	cfg := ClientConfig{conn: DefaultConnection}
-	for _, opt := range options {
-		if err := opt(&cfg); err != nil {
-			return nil, err
-		}
-	}
-
-	inv, err := invocation.Invoke(
-		issuer,
-		cfg.conn.ID(),
-		uploadadd.NewCapability(space, params),
-		convertToInvocationOptions(cfg)...,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, cfg.conn)
-	if err != nil {
-		return nil, err
-	}
-
-	rcptlnk, ok := resp.Get(inv.Link())
-	if !ok {
-		return nil, fmt.Errorf("receipt not found: %s", inv.Link())
-	}
-
-	reader, err := uploadadd.NewReceiptReader()
-	if err != nil {
-		return nil, err
-	}
-
-	return reader.Read(rcptlnk, resp.Blocks())
-}
-
-// UploadList returns a paginated list of uploads in a space.
-//
-// Required delegated capability proofs: `upload/list`
-//
-// The `issuer` is the signing authority that is issuing the UCAN invocation.
-//
-// The `space` is the resource the invocation applies to. It is typically the
-// DID of a space.
-//
-// The `params` are caveats required to perform an `upload/list` invocation.
-func UploadList(issuer principal.Signer, space did.DID, params uploadlist.Caveat, options ...Option) (receipt.Receipt[*uploadlist.Success, *uploadlist.Failure], error) {
-	cfg := ClientConfig{conn: DefaultConnection}
-	for _, opt := range options {
-		if err := opt(&cfg); err != nil {
-			return nil, err
-		}
-	}
-
-	inv, err := invocation.Invoke(
-		issuer,
-		cfg.conn.ID(),
-		uploadlist.NewCapability(space, params),
-		convertToInvocationOptions(cfg)...,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, cfg.conn)
-	if err != nil {
-		return nil, err
-	}
-
-	rcptlnk, ok := resp.Get(inv.Link())
-	if !ok {
-		return nil, fmt.Errorf("receipt not found: %s", inv.Link())
-	}
-
-	reader, err := uploadlist.NewReceiptReader()
-	if err != nil {
-		return nil, err
-	}
-
-	return reader.Read(rcptlnk, resp.Blocks())
-}
-
-// BlobAdd adds a blob to the service. The issuer needs proof of
+// SpaceBlobAdd adds a blob to the service. The issuer needs proof of
 // `space/blob/add` delegated capability.
 //
 // Required delegated capability proofs: `space/blob/add`
@@ -142,7 +47,7 @@ func UploadList(issuer principal.Signer, space did.DID, params uploadlist.Caveat
 //
 // Returns the multihash of the added blob and the location commitment that contains details about where the
 // blob can be located, or an error if something went wrong.
-func BlobAdd(ctx context.Context, content io.Reader, issuer principal.Signer, space did.DID, receiptsURL *url.URL, options ...Option) (multihash.Multihash, delegation.Delegation, error) {
+func SpaceBlobAdd(ctx context.Context, content io.Reader, issuer principal.Signer, space did.DID, receiptsURL *url.URL, options ...Option) (multihash.Multihash, delegation.Delegation, error) {
 	cfg := ClientConfig{conn: DefaultConnection}
 	for _, opt := range options {
 		if err := opt(&cfg); err != nil {
