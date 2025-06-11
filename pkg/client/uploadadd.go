@@ -23,11 +23,9 @@ import (
 //
 // The `params` are caveats required to perform an `upload/add` invocation.
 func UploadAdd(issuer principal.Signer, space did.DID, params uploadadd.Caveat, options ...Option) (receipt.Receipt[*uploadadd.Success, *uploadadd.Failure], error) {
-	cfg := ClientConfig{conn: DefaultConnection}
-	for _, opt := range options {
-		if err := opt(&cfg); err != nil {
-			return nil, err
-		}
+	cfg, err := NewConfig(options...)
+	if err != nil {
+		return nil, err
 	}
 
 	inv, err := invocation.Invoke(

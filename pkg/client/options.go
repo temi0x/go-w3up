@@ -7,9 +7,9 @@ import (
 )
 
 // Option is an option configuring a UCAN delegation.
-type Option func(cfg *ClientConfig) error
+type Option func(cfg *Config) error
 
-type ClientConfig struct {
+type Config struct {
 	conn client.Connection
 	exp  *int
 	nbf  int
@@ -18,9 +18,23 @@ type ClientConfig struct {
 	prf  []delegation.Delegation
 }
 
+// NewConfig creates a new ClientConfig with the given options. By
+// default, the connection is set to [DefaultConnection].
+func NewConfig(options ...Option) (Config, error) {
+	cfg := Config{conn: DefaultConnection}
+
+	for _, opt := range options {
+		if err := opt(&cfg); err != nil {
+			return Config{}, err
+		}
+	}
+
+	return cfg, nil
+}
+
 // WithConnection configures the connection to execute the invocation on.
 func WithConnection(conn client.Connection) Option {
-	return func(cfg *ClientConfig) error {
+	return func(cfg *Config) error {
 		cfg.conn = conn
 		return nil
 	}
@@ -29,7 +43,7 @@ func WithConnection(conn client.Connection) Option {
 // WithExpiration configures the expiration time in UTC seconds since Unix
 // epoch. Set this to -1 for no expiration.
 func WithExpiration(exp int) Option {
-	return func(cfg *ClientConfig) error {
+	return func(cfg *Config) error {
 		cfg.exp = &exp
 		return nil
 	}
@@ -38,7 +52,7 @@ func WithExpiration(exp int) Option {
 // WithNotBefore configures the time in UTC seconds since Unix epoch when the
 // UCAN will become valid.
 func WithNotBefore(nbf int) Option {
-	return func(cfg *ClientConfig) error {
+	return func(cfg *Config) error {
 		cfg.nbf = nbf
 		return nil
 	}
@@ -46,7 +60,7 @@ func WithNotBefore(nbf int) Option {
 
 // WithNonce configures the nonce value for the UCAN.
 func WithNonce(nnc string) Option {
-	return func(cfg *ClientConfig) error {
+	return func(cfg *Config) error {
 		cfg.nnc = nnc
 		return nil
 	}
@@ -54,7 +68,7 @@ func WithNonce(nnc string) Option {
 
 // WithFacts configures the facts for the UCAN.
 func WithFacts(fct []ucan.FactBuilder) Option {
-	return func(cfg *ClientConfig) error {
+	return func(cfg *Config) error {
 		cfg.fct = fct
 		return nil
 	}
@@ -65,7 +79,7 @@ func WithFacts(fct []ucan.FactBuilder) Option {
 // capabilities, the `proofs` must contain valid `Proof`s containing
 // delegations to the `issuer`.
 func WithProof(prf delegation.Delegation) Option {
-	return func(cfg *ClientConfig) error {
+	return func(cfg *Config) error {
 		cfg.prf = []delegation.Delegation{prf}
 		return nil
 	}
@@ -76,13 +90,13 @@ func WithProof(prf delegation.Delegation) Option {
 // capabilities, the `proofs` must contain valid `Proof`s containing
 // delegations to the `issuer`.
 func WithProofs(prf []delegation.Delegation) Option {
-	return func(cfg *ClientConfig) error {
+	return func(cfg *Config) error {
 		cfg.prf = prf
 		return nil
 	}
 }
 
-func convertToInvocationOptions(cfg ClientConfig) []delegation.Option {
+func convertToInvocationOptions(cfg Config) []delegation.Option {
 	var opts []delegation.Option
 	if cfg.exp != nil {
 		opts = append(opts, delegation.WithExpiration(*cfg.exp))
