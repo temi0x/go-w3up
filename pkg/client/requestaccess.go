@@ -10,17 +10,17 @@ import (
 	"github.com/storacha/go-ucanto/principal"
 )
 
-// SpaceAccess is the set of capabilities required by the agent to manage a
+// spaceAccess is the set of capabilities required by the agent to manage a
 // space.
-var SpaceAccess = []string{
-	"space/*",
-	"blob/*",
-	"index/*",
-	"store/*",
-	"upload/*",
-	"access/*",
-	"filecoin/*",
-	"usage/*",
+var spaceAccess = []access.CapabilityRequest{
+	{Can: "space/*"},
+	{Can: "blob/*"},
+	{Can: "index/*"},
+	{Can: "store/*"},
+	{Can: "upload/*"},
+	{Can: "access/*"},
+	{Can: "filecoin/*"},
+	{Can: "usage/*"},
 }
 
 // RequestAccess requests access to the service as an Account. This is the first
@@ -35,14 +35,9 @@ func RequestAccess(issuer principal.Signer, account did.DID, options ...Option) 
 		return err
 	}
 
-	capabilityRequests := make([]access.CapabilityRequest, 0, len(SpaceAccess))
-	for _, cap := range SpaceAccess {
-		capabilityRequests = append(capabilityRequests, access.CapabilityRequest{Can: cap})
-	}
-
 	caveats := access.AuthorizeCaveats{
 		Iss: &account,
-		Att: capabilityRequests,
+		Att: spaceAccess,
 	}
 
 	inv, err := access.Authorize.Invoke(issuer, cfg.conn.ID(), issuer.DID().String(), caveats, convertToInvocationOptions(cfg)...)

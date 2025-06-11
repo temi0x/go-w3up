@@ -44,6 +44,19 @@ func TestRequestAccess(t *testing.T) {
 		for _, att := range nb.Att {
 			requestedCapabilities = append(requestedCapabilities, att.Can)
 		}
-		require.ElementsMatch(t, client.SpaceAccess, requestedCapabilities, "expected to authorize the correct capabilities")
+
+		require.ElementsMatch(
+			t,
+			[]string{
+				"space/*",
+				"blob/*",
+				"index/*",
+				"store/*",
+				"upload/*",
+				"access/*",
+				"filecoin/*",
+				"usage/*",
+			}, requestedCapabilities,
+			"expected to authorize the capabilities required to manage a space")
 	})
 }
