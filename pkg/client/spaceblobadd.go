@@ -48,7 +48,7 @@ import (
 // Returns the multihash of the added blob and the location commitment that contains details about where the
 // blob can be located, or an error if something went wrong.
 func SpaceBlobAdd(ctx context.Context, content io.Reader, issuer principal.Signer, space did.DID, receiptsURL *url.URL, options ...Option) (multihash.Multihash, delegation.Delegation, error) {
-	cfg, err := NewClientConfig(options...)
+	cfg, err := NewConfig(options...)
 	if err != nil {
 		return nil, nil, err
 	}

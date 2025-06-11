@@ -22,7 +22,7 @@ import (
 //
 // The `params` are caveats required to perform an `upload/list` invocation.
 func UploadList(issuer principal.Signer, space did.DID, params uploadlist.Caveat, options ...Option) (receipt.Receipt[*uploadlist.Success, *uploadlist.Failure], error) {
-	cfg, err := NewClientConfig(options...)
+	cfg, err := NewConfig(options...)
 	if err != nil {
 		return nil, err
 	}
