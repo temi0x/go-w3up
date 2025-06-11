@@ -18,7 +18,7 @@ type Config struct {
 	prf  []delegation.Delegation
 }
 
-// NewConfig creates a new ClientConfig with the given options. By
+// NewConfig creates a new Config with the given options. By
 // default, the connection is set to [DefaultConnection].
 func NewConfig(options ...Option) (Config, error) {
 	cfg := Config{conn: DefaultConnection}
