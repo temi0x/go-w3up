@@ -73,7 +73,7 @@ func TestClaimAccess(t *testing.T) {
 		require.Equal(t, storedDel.Link().String(), claimedDels[0].Link().String(), "expected the claimed delegation to match the stored one")
 	})
 
-	t.Run("invokes `access/claim`", func(t *testing.T) {
+	t.Run("returns any handler error", func(t *testing.T) {
 		agent := helpers.Must(ed25519.Generate())
 
 		service := helpers.Must(signer.Wrap(
@@ -101,7 +101,6 @@ func TestClaimAccess(t *testing.T) {
 		connection := helpers.Must(uclient.NewConnection(server.ID(), server))
 
 		claimedDels, err := client.ClaimAccess(agent, client.WithConnection(connection))
-		fmt.Println(err.Error())
 
 		require.Error(t, err)
 		require.Equal(t, "`access/claim` failed: Something went wrong!", err.Error())
