@@ -7,9 +7,9 @@ import (
 
 	"github.com/storacha/go-libstoracha/capabilities/access"
 	"github.com/storacha/go-libstoracha/capabilities/upload"
+	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/core/invocation"
 	"github.com/storacha/go-ucanto/core/receipt/fx"
-	ed25519 "github.com/storacha/go-ucanto/principal/ed25519/signer"
 	"github.com/storacha/go-ucanto/server"
 	uhelpers "github.com/storacha/go-ucanto/testing/helpers"
 	"github.com/storacha/go-ucanto/ucan"
@@ -20,15 +20,9 @@ import (
 
 func TestClaimAccess(t *testing.T) {
 	t.Run("returns the delegations from `access/claim`'s receipt", func(t *testing.T) {
-		agentPrincipal := uhelpers.Must(ed25519.Generate())
-
-		// Some arbitrary delegation which has been stored to be claimed.
-		storedDel := uhelpers.Must(upload.Get.Delegate(
-			agentPrincipal,
-			agentPrincipal,
-			agentPrincipal.DID().String(),
-			upload.GetCaveats{Root: uhelpers.RandomCID()},
-		))
+		// Declare these up front to refer to them in the service method.
+		var storedDel delegation.Delegation
+		var c *client.Client
 
 		connection := newTestServerConnection(
 			server.WithServiceMethod(
@@ -40,7 +34,7 @@ func TestClaimAccess(t *testing.T) {
 						inv invocation.Invocation,
 						ctx server.InvocationContext,
 					) (access.ClaimOk, fx.Effects, error) {
-						assert.Equal(t, agentPrincipal.DID().String(), cap.With(), "expected to claim access for the agent")
+						assert.Equal(t, c.Issuer().DID().String(), cap.With(), "expected to claim access for the agent")
 
 						return access.ClaimOk{
 							Delegations: access.DelegationsModel{
@@ -55,7 +49,17 @@ func TestClaimAccess(t *testing.T) {
 			),
 		)
 
-		claimedDels, err := client.ClaimAccess(agentPrincipal, client.WithConnection(connection))
+		c = uhelpers.Must(client.NewClient(connection))
+
+		// Some arbitrary delegation which has been stored to be claimed.
+		storedDel = uhelpers.Must(upload.Get.Delegate(
+			c.Issuer(),
+			c.Issuer(),
+			c.Issuer().DID().String(),
+			upload.GetCaveats{Root: uhelpers.RandomCID()},
+		))
+
+		claimedDels, err := c.ClaimAccess()
 
 		require.NoError(t, err)
 		require.Len(t, claimedDels, 1, "expected exactly one delegation to be claimed")
@@ -63,8 +67,6 @@ func TestClaimAccess(t *testing.T) {
 	})
 
 	t.Run("returns any handler error", func(t *testing.T) {
-		agent := uhelpers.Must(ed25519.Generate())
-
 		connection := newTestServerConnection(
 			server.WithServiceMethod(
 				access.Claim.Can(),
@@ -81,21 +83,20 @@ func TestClaimAccess(t *testing.T) {
 			),
 		)
 
-		claimedDels, err := client.ClaimAccess(agent, client.WithConnection(connection))
+		c := uhelpers.Must(client.NewClient(connection))
+		claimedDels, err := c.ClaimAccess()
 
-		require.Error(t, err)
-		require.Equal(t, "`access/claim` failed: Something went wrong!", err.Error())
+		require.ErrorContains(t, err, "`access/claim` failed: Something went wrong!")
 		require.Len(t, claimedDels, 0)
 	})
 
 	t.Run("returns a useful error on any other UCAN failure", func(t *testing.T) {
-		agent := uhelpers.Must(ed25519.Generate())
-
 		// In this case, we test the server not implementing the `access/claim`
 		// capability.
 		connection := newTestServerConnection()
 
-		claimedDels, err := client.ClaimAccess(agent, client.WithConnection(connection))
+		c := uhelpers.Must(client.NewClient(connection))
+		claimedDels, err := c.ClaimAccess()
 
 		require.ErrorContains(t, err, "`access/claim` failed with unexpected error:")
 		require.ErrorContains(t, err, "HandlerNotFoundError")
