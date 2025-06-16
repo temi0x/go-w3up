@@ -14,6 +14,7 @@ import (
 	"github.com/storacha/go-ucanto/core/result/failure/datamodel"
 	"github.com/storacha/go-ucanto/principal"
 	serverdatamodel "github.com/storacha/go-ucanto/server/datamodel"
+	"github.com/storacha/guppy/pkg/client/nodevalue"
 	"github.com/storacha/guppy/pkg/delegation"
 )
 
@@ -60,14 +61,14 @@ func ClaimAccess(issuer principal.Signer, options ...Option) ([]udelegation.Dele
 		okNode, errorNode := result.Unwrap(anyRcpt.Out())
 
 		if okNode != nil {
-			okValue, err := NodeValue(okNode)
+			okValue, err := nodevalue.NodeValue(okNode)
 			if err != nil {
 				return nil, fmt.Errorf("reading `access/claim` ok output: %w", err)
 			}
 			return nil, fmt.Errorf("`access/claim` succeeded with unexpected output: %#v", okValue)
 		}
 
-		errorValue, err := NodeValue(errorNode)
+		errorValue, err := nodevalue.NodeValue(errorNode)
 		if err != nil {
 			return nil, fmt.Errorf("reading `access/claim` error output: %w", err)
 		}
