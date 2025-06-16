@@ -22,7 +22,7 @@ func TestRequestAccess(t *testing.T) {
 
 		account := uhelpers.Must(did.Parse("did:mailto:example.com:alice"))
 
-		invokedCapabilities := make([]ucan.Capability[access.AuthorizeCaveats], 0)
+		invokedCapabilities := []ucan.Capability[access.AuthorizeCaveats]{}
 
 		connection := helpers.NewServerConnection(
 			server.WithServiceMethod(
