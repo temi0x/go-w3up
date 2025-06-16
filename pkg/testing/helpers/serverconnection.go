@@ -15,7 +15,7 @@ import (
 //
 // The server generates its own service principal. It has a `did:web:` DID for
 // realism and readability in errors and failures, but calling code should use
-// `server.ID()` to get it rather than assume knowledge of the DID it picks.
+// `connection.ID()` to get it rather than assume knowledge of the DID it picks.
 func NewServerConnection(options ...server.Option) uclient.Connection {
 	servicePrincipal := uhelpers.Must(signer.Wrap(
 		uhelpers.Must(ed25519.Generate()),
