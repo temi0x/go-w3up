@@ -14,7 +14,6 @@ import (
 	uhelpers "github.com/storacha/go-ucanto/testing/helpers"
 	"github.com/storacha/go-ucanto/ucan"
 	"github.com/storacha/guppy/pkg/client"
-	"github.com/storacha/guppy/pkg/testing/helpers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +30,7 @@ func TestClaimAccess(t *testing.T) {
 			upload.GetCaveats{Root: uhelpers.RandomCID()},
 		))
 
-		connection := helpers.NewServerConnection(
+		connection := newTestServerConnection(
 			server.WithServiceMethod(
 				access.Claim.Can(),
 				server.Provide(
@@ -66,7 +65,7 @@ func TestClaimAccess(t *testing.T) {
 	t.Run("returns any handler error", func(t *testing.T) {
 		agent := uhelpers.Must(ed25519.Generate())
 
-		connection := helpers.NewServerConnection(
+		connection := newTestServerConnection(
 			server.WithServiceMethod(
 				access.Claim.Can(),
 				server.Provide(
