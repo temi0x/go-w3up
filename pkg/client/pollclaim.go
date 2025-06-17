@@ -11,11 +11,31 @@ import (
 	"github.com/storacha/go-ucanto/core/result"
 )
 
-func (c *Client) PollClaim(ctx context.Context, tickChan <-chan time.Time, authOk access.AuthorizeOk) <-chan result.Result[[]delegation.Delegation, error] {
+type tickChannelKey struct{}
+
+// WithTickChannel adds a tick channel to the context.
+func WithTickChannel(ctx context.Context, tickChan <-chan time.Time) context.Context {
+	return context.WithValue(ctx, tickChannelKey{}, tickChan)
+}
+
+func (c *Client) PollClaim(ctx context.Context, authOk access.AuthorizeOk) <-chan result.Result[[]delegation.Delegation, error] {
 	resultChan := make(chan result.Result[[]delegation.Delegation, error])
 
 	go func() {
 		defer close(resultChan)
+
+		var tickChan <-chan time.Time
+		givenTickChan := ctx.Value(tickChannelKey{})
+		if givenTickChan == nil {
+			tickChan = time.Tick(250 * time.Millisecond) // Default tick interval
+		} else {
+			var ok bool
+			tickChan, ok = givenTickChan.(<-chan time.Time)
+			if !ok {
+				resultChan <- result.Error[[]delegation.Delegation](fmt.Errorf("context's tick channel is of wrong type, expected <-chan time.Time"))
+				return
+			}
+		}
 
 		for {
 			select {

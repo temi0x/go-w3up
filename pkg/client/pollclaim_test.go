@@ -119,7 +119,7 @@ func TestPollClaim(t *testing.T) {
 		tickChan <- time.Now()
 		tickChan <- time.Now()
 
-		resultChan := c.PollClaim(testContext(t), tickChan, access.AuthorizeOk{
+		resultChan := c.PollClaim(client.WithTickChannel(testContext(t), tickChan), access.AuthorizeOk{
 			Request:    requestLink,
 			Expiration: 0,
 		})
@@ -142,7 +142,7 @@ func TestPollClaim(t *testing.T) {
 		tickChan := make(chan time.Time, 1)
 		tickChan <- time.Now()
 
-		resultChan := c.PollClaim(testContext(t), tickChan, access.AuthorizeOk{
+		resultChan := c.PollClaim(client.WithTickChannel(testContext(t), tickChan), access.AuthorizeOk{
 			Request:    requestLink,
 			Expiration: 0,
 		})
@@ -161,7 +161,7 @@ func TestPollClaim(t *testing.T) {
 		tickChan := make(chan time.Time)
 		ctx, cancel := context.WithCancel(testContext(t))
 
-		resultChan := c.PollClaim(ctx, tickChan, access.AuthorizeOk{
+		resultChan := c.PollClaim(client.WithTickChannel(ctx, tickChan), access.AuthorizeOk{
 			Request:    requestLink,
 			Expiration: 0,
 		})
