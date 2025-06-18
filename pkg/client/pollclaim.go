@@ -20,8 +20,7 @@ func (c *Client) PollClaim(ctx context.Context, authOk access.AuthorizeOk) <-cha
 
 // PollClaimWithTick is the same as [PollClaim], but accepts the tick channel
 // for timing control over the polling. PollClaimWithTick will poll once for
-// each value read on `tickChan`, until it closes, the claim succeeds, or an
-// error occurs.
+// each value read on `tickChan`, until the claim succeeds or an error occurs.
 func (c *Client) PollClaimWithTick(ctx context.Context, authOk access.AuthorizeOk, tickChan <-chan time.Time) <-chan result.Result[[]delegation.Delegation, error] {
 	resultChan := make(chan result.Result[[]delegation.Delegation, error])
 
@@ -33,12 +32,7 @@ func (c *Client) PollClaimWithTick(ctx context.Context, authOk access.AuthorizeO
 			case <-ctx.Done():
 				resultChan <- result.Error[[]delegation.Delegation](fmt.Errorf("context cancelled before delegations could be claimed: %w", ctx.Err()))
 				return
-			case _, ok := <-tickChan:
-				if !ok {
-					resultChan <- result.Error[[]delegation.Delegation](fmt.Errorf("tickChan closed before delegations could be claimed: %w", ctx.Err()))
-					return
-				}
-
+			case <-tickChan:
 				dels, err := c.ClaimAccess()
 				if err != nil {
 					fmt.Println("Failed to claim access:", err)
