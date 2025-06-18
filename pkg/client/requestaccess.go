@@ -42,12 +42,12 @@ func (c *Client) RequestAccess(account string) (access.AuthorizeOk, error) {
 		Att: spaceAccess,
 	}
 
-	inv, err := access.Authorize.Invoke(c.issuer, c.connection.ID(), c.issuer.DID().String(), caveats)
+	inv, err := access.Authorize.Invoke(c.Issuer(), c.Connection().ID(), c.Issuer().DID().String(), caveats)
 	if err != nil {
 		return access.AuthorizeOk{}, fmt.Errorf("generating invocation: %w", err)
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.connection)
+	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.Connection())
 	if err != nil {
 		return access.AuthorizeOk{}, fmt.Errorf("sending invocation: %w", err)
 	}

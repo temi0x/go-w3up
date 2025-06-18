@@ -116,8 +116,8 @@ func main() {
 }
 
 func whoami(cCtx *cli.Context) error {
-	s := util.MustGetSigner()
-	fmt.Println(s.DID())
+	c := util.MustGetClient()
+	fmt.Println(c.DID())
 	return nil
 }
 
@@ -132,10 +132,7 @@ func login(cCtx *cli.Context) error {
 		return fmt.Errorf("invalid email address: %w", err)
 	}
 
-	c, err := client.NewClient(util.MustGetConnection())
-	if err != nil {
-		return fmt.Errorf("creating client: %w", err)
-	}
+	c := util.MustGetClient()
 
 	authOk, err := c.RequestAccess(accountDid.String())
 	if err != nil {
@@ -157,24 +154,25 @@ func login(cCtx *cli.Context) error {
 	}
 
 	fmt.Println("Successfully logged in!", claimedDels)
+	c.AddProofs(claimedDels...)
 
-	// s := util.MustGetSigner()
-	// fmt.Println(s.DID())
 	return nil
 }
 
 func ls(cCtx *cli.Context) error {
-	signer := util.MustGetSigner()
-	conn := util.MustGetConnection()
+	c := util.MustGetClient()
 	space := util.MustParseDID(cCtx.String("space"))
-	proof := util.MustGetProof(cCtx.String("proof"))
 
-	rcpt, err := client.UploadList(
-		signer,
+	proofs := []delegation.Delegation{}
+	if cCtx.String("proof") != "" {
+		proof := util.MustGetProof(cCtx.String("proof"))
+		proofs = append(proofs, proof)
+	}
+
+	rcpt, err := c.UploadList(
 		space,
 		uploadlist.Caveat{},
-		client.WithConnection(conn),
-		client.WithProofs([]delegation.Delegation{proof}),
+		client.WithProofs(proofs),
 	)
 	if err != nil {
 		return err

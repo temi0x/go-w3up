@@ -10,7 +10,7 @@ import (
 	"github.com/storacha/go-ucanto/core/ipld"
 	"github.com/storacha/go-ucanto/did"
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
-	"github.com/storacha/guppy/agent/agentdata"
+	"github.com/storacha/guppy/pkg/agentdata"
 )
 
 func newDelegation() (delegation.Delegation, error) {

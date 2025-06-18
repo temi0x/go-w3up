@@ -26,12 +26,12 @@ import (
 func (c *Client) ClaimAccess() ([]udelegation.Delegation, error) {
 	caveats := access.ClaimCaveats{}
 
-	inv, err := access.Claim.Invoke(c.issuer, c.connection.ID(), c.issuer.DID().String(), caveats)
+	inv, err := access.Claim.Invoke(c.Issuer(), c.Connection().ID(), c.Issuer().DID().String(), caveats)
 	if err != nil {
 		return nil, fmt.Errorf("generating invocation: %w", err)
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.connection)
+	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.Connection())
 	if err != nil {
 		return nil, fmt.Errorf("sending invocation: %w", err)
 	}

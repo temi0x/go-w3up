@@ -7,7 +7,7 @@ import (
 
 	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
-	"github.com/storacha/guppy/agent/agentdata"
+	"github.com/storacha/guppy/pkg/agentdata"
 	"github.com/stretchr/testify/require"
 )
 

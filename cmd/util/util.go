@@ -8,94 +8,54 @@ import (
 	"os"
 	"path"
 
-	"github.com/ipld/go-ipld-prime"
-	"github.com/ipld/go-ipld-prime/codec/dagcbor"
-	"github.com/ipld/go-ipld-prime/schema"
-	"github.com/storacha/go-ucanto/client"
+	uclient "github.com/storacha/go-ucanto/client"
 	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/did"
-	"github.com/storacha/go-ucanto/principal"
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
 	"github.com/storacha/go-ucanto/transport/car"
 	"github.com/storacha/go-ucanto/transport/http"
+	"github.com/storacha/guppy/pkg/agentdata"
+	"github.com/storacha/guppy/pkg/client"
 	cdg "github.com/storacha/guppy/pkg/delegation"
 )
 
 const defaultServiceName = "staging.up.storacha.network"
 
-//go:embed config.ipldsch
-var configsch []byte
-
-type configurationModel struct {
-	Signer []byte
-}
-
-func MustGetSigner() principal.Signer {
-	str := os.Getenv("W3UP_PRIVATE_KEY") // use env var preferably
-	if str != "" {
-		s, err := signer.Parse(str)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return s
-	}
-
-	conf := mustReadConfig()
-	s, err := signer.Decode(conf.Signer)
-	if err != nil {
-		log.Fatalf("decoding signer: %s", err)
-	}
-	return s
-}
-
-func mustLoadConfigSchema() *schema.TypeSystem {
-	ts, err := ipld.LoadSchemaBytes(configsch)
-	if err != nil {
-		log.Fatalf("failed to load IPLD schema: %s", err)
-	}
-	return ts
-}
-
-func mustReadConfig() *configurationModel {
+func MustGetClient() *client.Client {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("obtaining user home directory: %s", err)
 	}
 
-	typ := mustLoadConfigSchema().TypeByName("Configuration")
-	confdir := path.Join(homedir, ".w3up")
-	confpath := path.Join(confdir, "config")
-	conf := configurationModel{}
+	datadir := path.Join(homedir, ".w3up")
+	datapath := path.Join(datadir, "config.json")
 
-	bytes, err := os.ReadFile(confpath)
+	data, err := agentdata.ReadFromFile(datapath)
+
 	if err != nil {
 		s, err := signer.Generate()
 		if err != nil {
 			log.Fatalf("generating signer: %s", err)
 		}
-
-		conf.Signer = s.Encode()
-		bytes, err = ipld.Marshal(dagcbor.Encode, &conf, typ)
-		if err != nil {
-			log.Fatalf("encoding config: %s", err)
-		}
-		if err := os.Mkdir(confdir, 0700); err != nil {
-			log.Fatalf("writing config: %s", err)
-		}
-		if os.WriteFile(confpath, bytes, 0600); err != nil {
-			log.Fatalf("writing config: %s", err)
-		}
-	} else {
-		_, err = ipld.Unmarshal(bytes, dagcbor.Decode, &conf, typ)
-		if err != nil {
-			log.Fatalf("decoding config: %s", err)
-		}
+		data.Principal = s
+		data.WriteToFile(datapath)
 	}
 
-	return &conf
+	c, err := client.NewClient(
+		MustGetConnection(),
+		client.WithData(data),
+		client.WithSaveFn(func(data agentdata.AgentData) error {
+			data.WriteToFile(datapath)
+			return nil
+		}),
+	)
+	if err != nil {
+		log.Fatalf("creating client: %s", err)
+	}
+	return c
 }
 
-func MustGetConnection() client.Connection {
+func MustGetConnection() uclient.Connection {
 	// service URL & DID
 	serviceURLStr := os.Getenv("STORACHA_SERVICE_URL") // use env var preferably
 	if serviceURLStr == "" {
@@ -121,7 +81,7 @@ func MustGetConnection() client.Connection {
 	channel := http.NewHTTPChannel(serviceURL)
 	codec := car.NewCAROutboundCodec()
 
-	conn, err := client.NewConnection(servicePrincipal, channel, client.WithOutboundCodec(codec))
+	conn, err := uclient.NewConnection(servicePrincipal, channel, uclient.WithOutboundCodec(codec))
 	if err != nil {
 		log.Fatal(err)
 	}

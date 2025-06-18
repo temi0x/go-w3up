@@ -22,15 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// testContext returns the `t.Context()` if available, or a background context
-// on older versions of Go.
-func testContext(t *testing.T) context.Context {
-	if tCtx, ok := any(t).(interface{ Context() context.Context }); ok {
-		return tCtx.Context()
-	}
-	return context.Background()
-}
-
 type factBuilder map[string]ipld.Builder
 
 func (fs factBuilder) ToIPLD() (map[string]datamodel.Node, error) {

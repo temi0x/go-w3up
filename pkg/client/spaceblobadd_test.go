@@ -2,8 +2,6 @@ package client_test
 
 import (
 	"bytes"
-	"context"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"net/http"
@@ -38,6 +36,7 @@ import (
 	ed25519signer "github.com/storacha/go-ucanto/principal/ed25519/signer"
 	"github.com/storacha/go-ucanto/principal/signer"
 	"github.com/storacha/go-ucanto/server"
+	uhelpers "github.com/storacha/go-ucanto/testing/helpers"
 	"github.com/storacha/go-ucanto/transport/car"
 	carresp "github.com/storacha/go-ucanto/transport/car/response"
 	uhttp "github.com/storacha/go-ucanto/transport/http"
@@ -48,11 +47,6 @@ import (
 )
 
 func TestBlobAdd(t *testing.T) {
-	issuer, err := ed25519signer.Generate()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	space, err := ed25519signer.Generate()
 	if err != nil {
 		t.Fatal(err)
@@ -84,16 +78,18 @@ func TestBlobAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	c := uhelpers.Must(client.NewClient(conn))
+
 	// delegate * to the space
 	cap := ucan.NewCapability("*", space.DID().String(), ucan.NoCaveats{})
-	proof, err := delegation.Delegate(space, issuer, []ucan.Capability[ucan.NoCaveats]{cap}, delegation.WithNoExpiration())
+	proof, err := delegation.Delegate(space, c.Issuer(), []ucan.Capability[ucan.NoCaveats]{cap}, delegation.WithNoExpiration())
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	testBlob := bytes.NewReader([]byte("test"))
 
-	_, _, err = client.SpaceBlobAdd(context.Background(), testBlob, issuer, space.DID(), receiptsURL, client.WithConnection(conn), client.WithProof(proof))
+	_, _, err = c.SpaceBlobAdd(testContext(t), testBlob, space.DID(), receiptsURL, client.WithProof(proof))
 	require.NoError(t, err)
 }
 
@@ -441,19 +437,4 @@ func setupHTTPHandlers(t *testing.T, mux *http.ServeMux, ucanSrv server.ServerVi
 
 		w.WriteHeader(resp.Status())
 	})
-}
-
-func randomMultihash(t *testing.T) multihash.Multihash {
-	bytes := make([]byte, 10)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	digest, err := multihash.Sum(bytes, multihash.SHA2_256, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return digest
 }

@@ -29,7 +29,6 @@ import (
 	"github.com/storacha/go-ucanto/core/result/failure"
 	fdm "github.com/storacha/go-ucanto/core/result/failure/datamodel"
 	"github.com/storacha/go-ucanto/did"
-	"github.com/storacha/go-ucanto/principal"
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
 	ucanhttp "github.com/storacha/go-ucanto/transport/http"
 	"github.com/storacha/go-ucanto/ucan"
@@ -40,14 +39,12 @@ import (
 //
 // Required delegated capability proofs: `space/blob/add`
 //
-// The `issuer` is the signing authority that is issuing the UCAN invocation.
-//
 // The `space` is the resource the invocation applies to. It is typically the
 // DID of a space.
 //
 // Returns the multihash of the added blob and the location commitment that contains details about where the
 // blob can be located, or an error if something went wrong.
-func SpaceBlobAdd(ctx context.Context, content io.Reader, issuer principal.Signer, space did.DID, receiptsURL *url.URL, options ...Option) (multihash.Multihash, delegation.Delegation, error) {
+func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.DID, receiptsURL *url.URL, options ...Option) (multihash.Multihash, delegation.Delegation, error) {
 	cfg, err := NewConfig(options...)
 	if err != nil {
 		return nil, nil, err
@@ -70,12 +67,12 @@ func SpaceBlobAdd(ctx context.Context, content io.Reader, issuer principal.Signe
 		},
 	}
 
-	inv, err := spaceblobcap.Add.Invoke(issuer, cfg.conn.ID(), space.String(), caveats, convertToInvocationOptions(cfg)...)
+	inv, err := spaceblobcap.Add.Invoke(c.Issuer(), c.Connection().ID(), space.String(), caveats, convertToInvocationOptions(cfg)...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("generating invocation: %w", err)
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, cfg.conn)
+	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.Connection())
 	if err != nil {
 		return nil, nil, fmt.Errorf("sending invocation: %w", err)
 	}
@@ -221,13 +218,13 @@ func SpaceBlobAdd(ctx context.Context, content io.Reader, issuer principal.Signe
 
 	// invoke `ucan/conclude` with `http/put` receipt
 	if putRcpt == nil {
-		if err := sendPutReceipt(putTask, issuer, cfg.conn.ID(), cfg.conn); err != nil {
+		if err := c.sendPutReceipt(putTask); err != nil {
 			return nil, nil, fmt.Errorf("sending put receipt: %w", err)
 		}
 	} else {
 		putOk, _ := result.Unwrap(putRcpt.Out())
 		if putOk == nil {
-			if err := sendPutReceipt(putTask, issuer, cfg.conn.ID(), cfg.conn); err != nil {
+			if err := c.sendPutReceipt(putTask); err != nil {
 				return nil, nil, fmt.Errorf("sending put receipt: %w", err)
 			}
 		}
@@ -238,14 +235,14 @@ func SpaceBlobAdd(ctx context.Context, content io.Reader, issuer principal.Signe
 	var site ucan.Link
 	var rcptBlocks iter.Seq2[ipld.Block, error]
 	if acceptRcpt == nil && legacyAcceptRcpt == nil {
-		anyAcceptRcpt, err = pollAccept(ctx, acceptTask.Link(), cfg.conn, receiptsURL)
+		anyAcceptRcpt, err = pollAccept(ctx, acceptTask.Link(), c.Connection(), receiptsURL)
 		if err != nil {
 			return nil, nil, fmt.Errorf("polling accept: %w", err)
 		}
 	} else if acceptRcpt != nil {
 		acceptOk, failErr := result.Unwrap(result.MapError(acceptRcpt.Out(), failure.FromFailureModel))
 		if failErr != nil {
-			anyAcceptRcpt, err = pollAccept(ctx, acceptTask.Link(), cfg.conn, receiptsURL)
+			anyAcceptRcpt, err = pollAccept(ctx, acceptTask.Link(), c.Connection(), receiptsURL)
 			if err != nil {
 				return nil, nil, fmt.Errorf("polling accept: %w", err)
 			}
@@ -256,7 +253,7 @@ func SpaceBlobAdd(ctx context.Context, content io.Reader, issuer principal.Signe
 	} else if legacyAcceptRcpt != nil {
 		acceptOk, failErr := result.Unwrap(result.MapError(legacyAcceptRcpt.Out(), failure.FromFailureModel))
 		if failErr != nil {
-			anyAcceptRcpt, err = pollAccept(ctx, acceptTask.Link(), cfg.conn, receiptsURL)
+			anyAcceptRcpt, err = pollAccept(ctx, acceptTask.Link(), c.Connection(), receiptsURL)
 			if err != nil {
 				return nil, nil, fmt.Errorf("polling accept: %w", err)
 			}
@@ -351,7 +348,7 @@ func putBlob(ctx context.Context, url *url.URL, headers http.Header, body []byte
 	return nil
 }
 
-func sendPutReceipt(putTask invocation.Invocation, issuer ucan.Signer, audience ucan.Principal, conn uclient.Connection) error {
+func (c *Client) sendPutReceipt(putTask invocation.Invocation) error {
 	if len(putTask.Facts()) != 1 {
 		return fmt.Errorf("invalid put facts, wanted 1 fact but got %d", len(putTask.Facts()))
 	}
@@ -441,9 +438,9 @@ func sendPutReceipt(putTask invocation.Invocation, issuer ucan.Signer, audience 
 	// }
 
 	httpPutConcludeInvocation, err := ucancap.Conclude.Invoke(
-		issuer,
-		audience,
-		issuer.DID().String(),
+		c.Issuer(),
+		c.Connection().ID(),
+		c.Issuer().DID().String(),
 		ucancap.ConcludeCaveats{
 			Receipt: putRcpt.Root().Link(),
 		},
@@ -463,7 +460,7 @@ func sendPutReceipt(putTask invocation.Invocation, issuer ucan.Signer, audience 
 		httpPutConcludeInvocation.Attach(rcptBlock)
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{httpPutConcludeInvocation}, conn)
+	resp, err := uclient.Execute([]invocation.Invocation{httpPutConcludeInvocation}, c.Connection())
 	if err != nil {
 		return fmt.Errorf("executing conclude invocation: %w", err)
 	}
