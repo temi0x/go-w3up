@@ -22,7 +22,7 @@ func (c *Client) PollClaim(ctx context.Context, authOk access.AuthorizeOk) <-cha
 // for timing control over the polling. PollClaimWithTick will poll once for
 // each value read on `tickChan`, until the claim succeeds or an error occurs.
 func (c *Client) PollClaimWithTick(ctx context.Context, authOk access.AuthorizeOk, tickChan <-chan time.Time) <-chan result.Result[[]delegation.Delegation, error] {
-	resultChan := make(chan result.Result[[]delegation.Delegation, error])
+	resultChan := make(chan result.Result[[]delegation.Delegation, error], 1)
 
 	go func() {
 		defer close(resultChan)
