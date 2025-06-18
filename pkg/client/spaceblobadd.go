@@ -42,14 +42,16 @@ import (
 // The `space` is the resource the invocation applies to. It is typically the
 // DID of a space.
 //
+// The `content` is the blob content to be added.
+//
+// The `receiptsURL` is the URL where the service can poll for receipts.
+//
+// The `proofs` are delegation proofs to use in addition to those in the client.
+// They won't be saved in the client, only used for this invocation.
+//
 // Returns the multihash of the added blob and the location commitment that contains details about where the
 // blob can be located, or an error if something went wrong.
-func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.DID, receiptsURL *url.URL, options ...Option) (multihash.Multihash, delegation.Delegation, error) {
-	cfg, err := NewConfig(options...)
-	if err != nil {
-		return nil, nil, err
-	}
-
+func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.DID, receiptsURL *url.URL, proofs ...delegation.Delegation) (multihash.Multihash, delegation.Delegation, error) {
 	contentBytes, err := io.ReadAll(content)
 	if err != nil {
 		return nil, nil, fmt.Errorf("reading content: %w", err)
@@ -67,7 +69,12 @@ func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.
 		},
 	}
 
-	inv, err := spaceblobcap.Add.Invoke(c.Issuer(), c.Connection().ID(), space.String(), caveats, convertToInvocationOptions(cfg)...)
+	pfs := []delegation.Proof{}
+	for _, dlg := range proofs {
+		pfs = append(pfs, delegation.FromDelegation(dlg))
+	}
+
+	inv, err := spaceblobcap.Add.Invoke(c.Issuer(), c.Connection().ID(), space.String(), caveats, delegation.WithProof(pfs...))
 	if err != nil {
 		return nil, nil, fmt.Errorf("generating invocation: %w", err)
 	}

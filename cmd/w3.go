@@ -11,7 +11,6 @@ import (
 	"github.com/storacha/go-ucanto/core/result"
 	"github.com/storacha/guppy/cmd/util"
 	"github.com/storacha/guppy/pkg/capability/uploadlist"
-	"github.com/storacha/guppy/pkg/client"
 	"github.com/storacha/guppy/pkg/didmailto"
 	"github.com/urfave/cli/v2"
 )
@@ -172,7 +171,7 @@ func ls(cCtx *cli.Context) error {
 	rcpt, err := c.UploadList(
 		space,
 		uploadlist.Caveat{},
-		client.WithProofs(proofs),
+		proofs...,
 	)
 	if err != nil {
 		return err

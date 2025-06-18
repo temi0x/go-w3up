@@ -207,7 +207,7 @@ func uploadDirectory(ctx context.Context, paths []string, c *client.Client, spac
 }
 
 func addBlob(ctx context.Context, content io.Reader, c *client.Client, space did.DID, proofs []delegation.Delegation, receiptsURL *url.URL) (multihash.Multihash, error) {
-	contentHash, _, err := c.SpaceBlobAdd(ctx, content, space, receiptsURL, client.WithProofs(proofs))
+	contentHash, _, err := c.SpaceBlobAdd(ctx, content, space, receiptsURL, proofs...)
 	if err != nil {
 		return nil, err
 	}

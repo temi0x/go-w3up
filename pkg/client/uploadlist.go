@@ -19,22 +19,20 @@ import (
 // DID of a space.
 //
 // The `params` are caveats required to perform an `upload/list` invocation.
-func (c *Client) UploadList(space did.DID, params uploadlist.Caveat, options ...Option) (receipt.Receipt[*uploadlist.Success, *uploadlist.Failure], error) {
-	cfg, err := NewConfig(options...)
-	if err != nil {
-		return nil, err
-	}
-
-	proofs := make([]delegation.Proof, 0, len(c.Proofs()))
-	for _, del := range append(c.Proofs(), cfg.prf...) {
-		proofs = append(proofs, delegation.FromDelegation(del))
+//
+// The `proofs` are delegation proofs to use in addition to those in the client.
+// They won't be saved in the client, only used for this invocation.
+func (c *Client) UploadList(space did.DID, params uploadlist.Caveat, proofs ...delegation.Delegation) (receipt.Receipt[*uploadlist.Success, *uploadlist.Failure], error) {
+	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
+	for _, del := range append(c.Proofs(), proofs...) {
+		pfs = append(pfs, delegation.FromDelegation(del))
 	}
 
 	inv, err := invocation.Invoke(
 		c.Issuer(),
 		c.Connection().ID(),
 		uploadlist.NewCapability(space, params),
-		delegation.WithProof(proofs...),
+		delegation.WithProof(pfs...),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("generating invocation: %w", err)

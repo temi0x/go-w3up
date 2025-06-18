@@ -17,7 +17,7 @@ type Client struct {
 
 // NewClient creates a new client. If [connection] is `nil`, the default
 // connection will be used.
-func NewClient(connection uclient.Connection, options ...Option2) (*Client, error) {
+func NewClient(connection uclient.Connection, options ...Option) (*Client, error) {
 	c := Client{
 		connection: connection,
 	}
@@ -73,43 +73,4 @@ func (c *Client) AddProofs(delegations ...delegation.Delegation) error {
 		return c.saveFn(c.data)
 	}
 	return nil
-}
-
-type Option2 func(c *Client) error
-
-// WithConnection2 configures the connection for the client to use. If one is
-// not provided, the default connection will be used.
-func WithConnection2(conn uclient.Connection) Option2 {
-	return func(c *Client) error {
-		c.connection = conn
-		return nil
-	}
-}
-
-// WithPrincipal configures the principal for the client to use. If one is
-// not provided, a new principal will be generated.
-func WithPrincipal(principal principal.Signer) Option2 {
-	return func(c *Client) error {
-		c.data.Principal = principal
-		return nil
-	}
-}
-
-// WithData configures the agent data for the client to use. If one is not
-// provided, a new agent data will be created with a new principal.
-func WithData(data agentdata.AgentData) Option2 {
-	return func(c *Client) error {
-		c.data = data
-		return nil
-	}
-}
-
-// WithSaveFn configures the save function for the client to use. This
-// function will be called to save the agent data whenever it changes. If
-// one is not provided, saving will be silently ignored.
-func WithSaveFn(saveFn func(agentdata.AgentData) error) Option2 {
-	return func(c *Client) error {
-		c.saveFn = saveFn
-		return nil
-	}
 }

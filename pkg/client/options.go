@@ -2,123 +2,46 @@ package client
 
 import (
 	uclient "github.com/storacha/go-ucanto/client"
-	"github.com/storacha/go-ucanto/core/delegation"
-	"github.com/storacha/go-ucanto/ucan"
+	"github.com/storacha/go-ucanto/principal"
+	"github.com/storacha/guppy/pkg/agentdata"
 )
 
-// Option is an option configuring a UCAN delegation.
-type Option func(cfg *Config) error
+// Option is an option configuring a Client.
+type Option func(c *Client) error
 
-type Config struct {
-	conn uclient.Connection
-	exp  *int
-	nbf  int
-	nnc  string
-	fct  []ucan.FactBuilder
-	prf  []delegation.Delegation
-}
-
-// NewConfig creates a new Config with the given options. By
-// default, the connection is set to [DefaultConnection].
-func NewConfig(options ...Option) (Config, error) {
-	cfg := Config{conn: DefaultConnection}
-
-	for _, opt := range options {
-		if err := opt(&cfg); err != nil {
-			return Config{}, err
-		}
-	}
-
-	return cfg, nil
-}
-
-// WithConnection configures the connection to execute the invocation on.
+// WithConnection configures the connection for the client to use. If one is
+// not provided, the default connection will be used.
 func WithConnection(conn uclient.Connection) Option {
-	return func(cfg *Config) error {
-		cfg.conn = conn
+	return func(c *Client) error {
+		c.connection = conn
 		return nil
 	}
 }
 
-// WithExpiration configures the expiration time in UTC seconds since Unix
-// epoch. Set this to -1 for no expiration.
-func WithExpiration(exp int) Option {
-	return func(cfg *Config) error {
-		cfg.exp = &exp
+// WithPrincipal configures the principal for the client to use. If one is
+// not provided, a new principal will be generated.
+func WithPrincipal(principal principal.Signer) Option {
+	return func(c *Client) error {
+		c.data.Principal = principal
 		return nil
 	}
 }
 
-// WithNotBefore configures the time in UTC seconds since Unix epoch when the
-// UCAN will become valid.
-func WithNotBefore(nbf int) Option {
-	return func(cfg *Config) error {
-		cfg.nbf = nbf
+// WithData configures the agent data for the client to use. If one is not
+// provided, a new agent data will be created with a new principal.
+func WithData(data agentdata.AgentData) Option {
+	return func(c *Client) error {
+		c.data = data
 		return nil
 	}
 }
 
-// WithNonce configures the nonce value for the UCAN.
-func WithNonce(nnc string) Option {
-	return func(cfg *Config) error {
-		cfg.nnc = nnc
+// WithSaveFn configures the save function for the client to use. This
+// function will be called to save the agent data whenever it changes. If
+// one is not provided, saving will be silently ignored.
+func WithSaveFn(saveFn func(agentdata.AgentData) error) Option {
+	return func(c *Client) error {
+		c.saveFn = saveFn
 		return nil
 	}
-}
-
-// WithFacts configures the facts for the UCAN.
-func WithFacts(fct []ucan.FactBuilder) Option {
-	return func(cfg *Config) error {
-		cfg.fct = fct
-		return nil
-	}
-}
-
-// WithProof configures a single proof for the UCAN. If the `issuer` of this
-// `Delegation` is not the resource owner / service provider, for the delegated
-// capabilities, the `proofs` must contain valid `Proof`s containing
-// delegations to the `issuer`.
-func WithProof(prf delegation.Delegation) Option {
-	return func(cfg *Config) error {
-		cfg.prf = []delegation.Delegation{prf}
-		return nil
-	}
-}
-
-// WithProofs configures the proofs for the UCAN. If the `issuer` of this
-// `Delegation` is not the resource owner / service provider, for the delegated
-// capabilities, the `proofs` must contain valid `Proof`s containing
-// delegations to the `issuer`.
-func WithProofs(prf []delegation.Delegation) Option {
-	return func(cfg *Config) error {
-		cfg.prf = prf
-		return nil
-	}
-}
-
-func convertToInvocationOptions(cfg Config) []delegation.Option {
-	var opts []delegation.Option
-	if cfg.exp != nil {
-		opts = append(opts, delegation.WithExpiration(*cfg.exp))
-	} else {
-		opts = append(opts, delegation.WithNoExpiration())
-	}
-	if cfg.nbf != 0 {
-		opts = append(opts, delegation.WithNotBefore(cfg.nbf))
-	}
-	if cfg.nnc != "" {
-		opts = append(opts, delegation.WithNonce(cfg.nnc))
-	}
-	if cfg.fct != nil {
-		opts = append(opts, delegation.WithFacts(cfg.fct))
-	}
-	if cfg.prf != nil {
-		proofs := []delegation.Proof{}
-		for _, dlg := range cfg.prf {
-			proofs = append(proofs, delegation.FromDelegation(dlg))
-		}
-
-		opts = append(opts, delegation.WithProof(proofs...))
-	}
-	return opts
 }
