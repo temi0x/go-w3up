@@ -51,7 +51,7 @@ func (c *Client) pollClaimWithTicker(ctx context.Context, authOk access.Authoriz
 			relevantDels := make([]delegation.Delegation, 0, len(dels))
 			for _, del := range dels {
 				for _, fact := range del.Facts() {
-					requestLinkValue, ok := fact["access/request"]
+					requestLinkValue, ok := fact[access.AuthorizeRequestFactKey]
 					if !ok {
 						continue // Skip if the fact does not contain "access/request"
 					}
