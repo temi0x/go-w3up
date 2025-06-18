@@ -119,10 +119,10 @@ func TestPollClaim(t *testing.T) {
 		tickChan <- time.Now()
 		tickChan <- time.Now()
 
-		resultChan := c.PollClaim(client.WithTickChannel(testContext(t), tickChan), access.AuthorizeOk{
+		resultChan := c.PollClaimWithTick(testContext(t), access.AuthorizeOk{
 			Request:    requestLink,
 			Expiration: 0,
-		})
+		}, tickChan)
 
 		claimedDels, err := result.Unwrap(<-resultChan)
 		require.NoError(t, err, "expected no error from PollClaim")
@@ -142,10 +142,10 @@ func TestPollClaim(t *testing.T) {
 		tickChan := make(chan time.Time, 1)
 		tickChan <- time.Now()
 
-		resultChan := c.PollClaim(client.WithTickChannel(testContext(t), tickChan), access.AuthorizeOk{
+		resultChan := c.PollClaimWithTick(testContext(t), access.AuthorizeOk{
 			Request:    requestLink,
 			Expiration: 0,
-		})
+		}, tickChan)
 
 		claimedDels, err := result.Unwrap(<-resultChan)
 
@@ -161,10 +161,10 @@ func TestPollClaim(t *testing.T) {
 		tickChan := make(chan time.Time)
 		ctx, cancel := context.WithCancel(testContext(t))
 
-		resultChan := c.PollClaim(client.WithTickChannel(ctx, tickChan), access.AuthorizeOk{
+		resultChan := c.PollClaimWithTick(ctx, access.AuthorizeOk{
 			Request:    requestLink,
 			Expiration: 0,
-		})
+		}, tickChan)
 
 		// Cancel the context to simulate a timeout
 		cancel()

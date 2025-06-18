@@ -11,31 +11,22 @@ import (
 	"github.com/storacha/go-ucanto/core/result"
 )
 
-type tickChannelKey struct{}
-
-// WithTickChannel adds a tick channel to the context.
-func WithTickChannel(ctx context.Context, tickChan <-chan time.Time) context.Context {
-	return context.WithValue(ctx, tickChannelKey{}, tickChan)
+// PollClaim attempts to `access/claim` and retries until it finds delegations
+// authorized by way of the given `authOk`. It returns a channel which will
+// produce the result and then close.
+func (c *Client) PollClaim(ctx context.Context, authOk access.AuthorizeOk) <-chan result.Result[[]delegation.Delegation, error] {
+	return c.PollClaimWithTick(ctx, authOk, time.Tick(250*time.Millisecond))
 }
 
-func (c *Client) PollClaim(ctx context.Context, authOk access.AuthorizeOk) <-chan result.Result[[]delegation.Delegation, error] {
+// PollClaimWithTick is the same as [PollClaim], but accepts the tick channel
+// for timing control over the polling. PollClaimWithTick will poll once for
+// each value read on `tickChan`, until it closes, the claim succeeds, or an
+// error occurs.
+func (c *Client) PollClaimWithTick(ctx context.Context, authOk access.AuthorizeOk, tickChan <-chan time.Time) <-chan result.Result[[]delegation.Delegation, error] {
 	resultChan := make(chan result.Result[[]delegation.Delegation, error])
 
 	go func() {
 		defer close(resultChan)
-
-		var tickChan <-chan time.Time
-		givenTickChan := ctx.Value(tickChannelKey{})
-		if givenTickChan == nil {
-			tickChan = time.Tick(250 * time.Millisecond) // Default tick interval
-		} else {
-			var ok bool
-			tickChan, ok = givenTickChan.(<-chan time.Time)
-			if !ok {
-				resultChan <- result.Error[[]delegation.Delegation](fmt.Errorf("context's tick channel is of wrong type, expected <-chan time.Time"))
-				return
-			}
-		}
 
 		for {
 			select {
