@@ -42,7 +42,6 @@ func (c *Client) pollClaimWithTicker(ctx context.Context, authOk access.Authoriz
 		case <-tickChan:
 			dels, err := c.ClaimAccess()
 			if err != nil {
-				fmt.Println("Failed to claim access:", err)
 				return nil, fmt.Errorf("failed to claim access: %w", err)
 			}
 
