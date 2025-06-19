@@ -90,3 +90,10 @@ func (c *Client) save() error {
 	}
 	return nil
 }
+
+func (c *Client) Reset() error {
+	c.data = agentdata.AgentData{
+		Principal: c.Issuer(),
+	}
+	return c.save()
+}
