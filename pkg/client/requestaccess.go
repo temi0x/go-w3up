@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 
@@ -36,7 +37,7 @@ var spaceAccess = []access.CapabilityRequest{
 // The [issuer] is the Agent which would like to act as the Account.
 //
 // The [account] is the Account the Agent would like to act as.
-func (c *Client) RequestAccess(account string) (access.AuthorizeOk, error) {
+func (c *Client) RequestAccess(ctx context.Context, account string) (access.AuthorizeOk, error) {
 	caveats := access.AuthorizeCaveats{
 		Iss: &account,
 		Att: spaceAccess,
@@ -47,7 +48,7 @@ func (c *Client) RequestAccess(account string) (access.AuthorizeOk, error) {
 		return access.AuthorizeOk{}, fmt.Errorf("generating invocation: %w", err)
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.Connection())
+	resp, err := uclient.Execute(ctx, []invocation.Invocation{inv}, c.Connection())
 	if err != nil {
 		return access.AuthorizeOk{}, fmt.Errorf("sending invocation: %w", err)
 	}

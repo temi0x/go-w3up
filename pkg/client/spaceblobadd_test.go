@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -180,7 +181,8 @@ func setupTestUCANServer(t *testing.T, serverPrincipal principal.Signer, putBlob
 
 	spaceBlobAddMethod := server.Provide(
 		spaceblobcap.Add,
-		func(cap ucan.Capability[spaceblobcap.AddCaveats], inv invocation.Invocation, ctx server.InvocationContext) (spaceblobcap.AddOk, fx.Effects, error) {
+		func(ctx context.Context,
+			cap ucan.Capability[spaceblobcap.AddCaveats], inv invocation.Invocation, context server.InvocationContext) (spaceblobcap.AddOk, fx.Effects, error) {
 			// add task for blob/allocate
 			blobDigest := cap.Nb().Blob.Digest
 			blobSize := cap.Nb().Blob.Size
@@ -314,7 +316,7 @@ func setupTestUCANServer(t *testing.T, serverPrincipal principal.Signer, putBlob
 	// ucan/conclude handler
 	ucanConcludeMethod := server.Provide(
 		ucancap.Conclude,
-		func(capability ucan.Capability[ucancap.ConcludeCaveats], invocation invocation.Invocation, context server.InvocationContext) (ucancap.ConcludeOk, fx.Effects, error) {
+		func(ctx context.Context, capability ucan.Capability[ucancap.ConcludeCaveats], invocation invocation.Invocation, context server.InvocationContext) (ucancap.ConcludeOk, fx.Effects, error) {
 			return ucancap.ConcludeOk{}, nil, nil
 		},
 	)
@@ -322,7 +324,7 @@ func setupTestUCANServer(t *testing.T, serverPrincipal principal.Signer, putBlob
 	// upload/add handler
 	uploadAddMethod := server.Provide(
 		uploadcap.Add,
-		func(capability ucan.Capability[uploadcap.AddCaveats], invocation invocation.Invocation, context server.InvocationContext) (uploadcap.AddOk, fx.Effects, error) {
+		func(ctx context.Context, capability ucan.Capability[uploadcap.AddCaveats], invocation invocation.Invocation, context server.InvocationContext) (uploadcap.AddOk, fx.Effects, error) {
 			return uploadcap.AddOk{}, nil, nil
 		},
 	)
@@ -345,7 +347,7 @@ func setupHTTPHandlers(t *testing.T, mux *http.ServeMux, ucanSrv server.ServerVi
 	// ucan handler
 	ucanPath := fmt.Sprintf("POST %s", ucanURL.Path)
 	mux.HandleFunc(ucanPath, func(w http.ResponseWriter, r *http.Request) {
-		res, _ := ucanSrv.Request(uhttp.NewHTTPRequest(r.Body, r.Header))
+		res, _ := ucanSrv.Request(testContext(t), uhttp.NewHTTPRequest(r.Body, r.Header))
 
 		for key, vals := range res.Headers() {
 			for _, v := range vals {

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/storacha/go-libstoracha/capabilities/access"
@@ -23,7 +24,7 @@ import (
 // user to confirm the access request out of band, e.g. via email. Once
 // confirmed, a delegation will be available on the service for the Agent to
 // claim.
-func (c *Client) ClaimAccess() ([]udelegation.Delegation, error) {
+func (c *Client) ClaimAccess(ctx context.Context) ([]udelegation.Delegation, error) {
 	caveats := access.ClaimCaveats{}
 
 	inv, err := access.Claim.Invoke(c.Issuer(), c.Connection().ID(), c.Issuer().DID().String(), caveats)
@@ -31,7 +32,7 @@ func (c *Client) ClaimAccess() ([]udelegation.Delegation, error) {
 		return nil, fmt.Errorf("generating invocation: %w", err)
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.Connection())
+	resp, err := uclient.Execute(ctx, []invocation.Invocation{inv}, c.Connection())
 	if err != nil {
 		return nil, fmt.Errorf("sending invocation: %w", err)
 	}

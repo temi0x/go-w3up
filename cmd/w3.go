@@ -133,7 +133,7 @@ func login(cCtx *cli.Context) error {
 
 	c := util.MustGetClient()
 
-	authOk, err := c.RequestAccess(accountDid.String())
+	authOk, err := c.RequestAccess(cCtx.Context, accountDid.String())
 	if err != nil {
 		return fmt.Errorf("requesting access: %w", err)
 	}
@@ -169,6 +169,7 @@ func ls(cCtx *cli.Context) error {
 	}
 
 	rcpt, err := c.UploadList(
+		cCtx.Context,
 		space,
 		uploadlist.Caveat{},
 		proofs...,

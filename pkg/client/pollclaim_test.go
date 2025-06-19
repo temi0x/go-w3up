@@ -57,9 +57,10 @@ func TestPollClaim(t *testing.T) {
 			server.Provide(
 				access.Claim,
 				func(
+					ctx context.Context,
 					cap ucan.Capability[access.ClaimCaveats],
 					inv invocation.Invocation,
-					ctx server.InvocationContext,
+					context server.InvocationContext,
 				) (access.ClaimOk, fx.Effects, error) {
 					var response result.Result[access.ClaimOk, error]
 					if len(responses) == 0 {

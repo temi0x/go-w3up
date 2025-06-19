@@ -171,7 +171,7 @@ func uploadCAR(ctx context.Context, path string, c *client.Client, space did.DID
 		return nil, err
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.Connection())
+	resp, err := uclient.Execute(ctx, []invocation.Invocation{inv}, c.Connection())
 	if err != nil {
 		return nil, err
 	}

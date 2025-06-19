@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	uclient "github.com/storacha/go-ucanto/client"
@@ -23,7 +24,7 @@ import (
 // They won't be saved in the client, only used for this invocation.
 //
 // The `params` are caveats required to perform an `upload/add` invocation.
-func (c *Client) UploadAdd(space did.DID, params uploadadd.Caveat, proofs ...delegation.Delegation) (receipt.Receipt[*uploadadd.Success, *uploadadd.Failure], error) {
+func (c *Client) UploadAdd(ctx context.Context, space did.DID, params uploadadd.Caveat, proofs ...delegation.Delegation) (receipt.Receipt[*uploadadd.Success, *uploadadd.Failure], error) {
 	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
 	for _, del := range append(c.Proofs(), proofs...) {
 		pfs = append(pfs, delegation.FromDelegation(del))
@@ -39,7 +40,7 @@ func (c *Client) UploadAdd(space did.DID, params uploadadd.Caveat, proofs ...del
 		return nil, err
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.Connection())
+	resp, err := uclient.Execute(ctx, []invocation.Invocation{inv}, c.Connection())
 	if err != nil {
 		return nil, err
 	}

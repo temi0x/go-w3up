@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	uclient "github.com/storacha/go-ucanto/client"
@@ -22,7 +23,7 @@ import (
 //
 // The `proofs` are delegation proofs to use in addition to those in the client.
 // They won't be saved in the client, only used for this invocation.
-func (c *Client) UploadList(space did.DID, params uploadlist.Caveat, proofs ...delegation.Delegation) (receipt.Receipt[*uploadlist.Success, *uploadlist.Failure], error) {
+func (c *Client) UploadList(ctx context.Context, space did.DID, params uploadlist.Caveat, proofs ...delegation.Delegation) (receipt.Receipt[*uploadlist.Success, *uploadlist.Failure], error) {
 	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
 	for _, del := range append(c.Proofs(), proofs...) {
 		pfs = append(pfs, delegation.FromDelegation(del))
@@ -38,7 +39,7 @@ func (c *Client) UploadList(space did.DID, params uploadlist.Caveat, proofs ...d
 		return nil, fmt.Errorf("generating invocation: %w", err)
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.Connection())
+	resp, err := uclient.Execute(ctx, []invocation.Invocation{inv}, c.Connection())
 	if err != nil {
 		return nil, fmt.Errorf("executing invocation: %w", err)
 	}

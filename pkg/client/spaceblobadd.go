@@ -79,7 +79,7 @@ func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.
 		return nil, nil, fmt.Errorf("generating invocation: %w", err)
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{inv}, c.Connection())
+	resp, err := uclient.Execute(ctx, []invocation.Invocation{inv}, c.Connection())
 	if err != nil {
 		return nil, nil, fmt.Errorf("sending invocation: %w", err)
 	}
@@ -225,13 +225,13 @@ func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.
 
 	// invoke `ucan/conclude` with `http/put` receipt
 	if putRcpt == nil {
-		if err := c.sendPutReceipt(putTask); err != nil {
+		if err := c.sendPutReceipt(ctx, putTask); err != nil {
 			return nil, nil, fmt.Errorf("sending put receipt: %w", err)
 		}
 	} else {
 		putOk, _ := result.Unwrap(putRcpt.Out())
 		if putOk == nil {
-			if err := c.sendPutReceipt(putTask); err != nil {
+			if err := c.sendPutReceipt(ctx, putTask); err != nil {
 				return nil, nil, fmt.Errorf("sending put receipt: %w", err)
 			}
 		}
@@ -355,7 +355,7 @@ func putBlob(ctx context.Context, url *url.URL, headers http.Header, body []byte
 	return nil
 }
 
-func (c *Client) sendPutReceipt(putTask invocation.Invocation) error {
+func (c *Client) sendPutReceipt(ctx context.Context, putTask invocation.Invocation) error {
 	if len(putTask.Facts()) != 1 {
 		return fmt.Errorf("invalid put facts, wanted 1 fact but got %d", len(putTask.Facts()))
 	}
@@ -467,7 +467,7 @@ func (c *Client) sendPutReceipt(putTask invocation.Invocation) error {
 		httpPutConcludeInvocation.Attach(rcptBlock)
 	}
 
-	resp, err := uclient.Execute([]invocation.Invocation{httpPutConcludeInvocation}, c.Connection())
+	resp, err := uclient.Execute(ctx, []invocation.Invocation{httpPutConcludeInvocation}, c.Connection())
 	if err != nil {
 		return fmt.Errorf("executing conclude invocation: %w", err)
 	}

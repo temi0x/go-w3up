@@ -1,8 +1,6 @@
 module github.com/storacha/guppy
 
-go 1.23.8
-
-toolchain go1.24.3
+go 1.24.4
 
 require (
 	github.com/briandowns/spinner v1.23.2
@@ -11,8 +9,8 @@ require (
 	github.com/multiformats/go-multicodec v0.9.0
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/multiformats/go-varint v0.0.7
-	github.com/storacha/go-libstoracha v0.0.8
-	github.com/storacha/go-ucanto v0.3.2
+	github.com/storacha/go-libstoracha v0.0.9-0.20250619152513-847ae9c84f09
+	github.com/storacha/go-ucanto v0.4.2-0.20250619152010-a37ab7e132b3
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.25.7
 )
