@@ -45,7 +45,7 @@ func TestRequestAccess(t *testing.T) {
 		capability := invokedCapabilities[0]
 
 		nb := uhelpers.Must(access.AuthorizeCaveatsReader.Read(capability.Nb()))
-		require.Equal(t, "did:mailto:example.com:alice", nb.Iss.String(), "expected to authorize the correct issuer")
+		require.Equal(t, "did:mailto:example.com:alice", *nb.Iss, "expected to authorize the correct issuer")
 
 		requestedCapabilities := make([]string, 0, len(nb.Att))
 		for _, att := range nb.Att {

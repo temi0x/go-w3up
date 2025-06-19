@@ -29,8 +29,9 @@ var spaceAccess = []access.CapabilityRequest{
 //
 // The [account] is the Account the Agent would like to act as.
 func (c *Client) RequestAccess(account did.DID) error {
+	accountStr := account.String()
 	caveats := access.AuthorizeCaveats{
-		Iss: &account,
+		Iss: &accountStr,
 		Att: spaceAccess,
 	}
 
