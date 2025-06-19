@@ -69,9 +69,9 @@ func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.
 		},
 	}
 
-	pfs := []delegation.Proof{}
-	for _, dlg := range proofs {
-		pfs = append(pfs, delegation.FromDelegation(dlg))
+	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
+	for _, del := range append(c.Proofs(), proofs...) {
+		pfs = append(pfs, delegation.FromDelegation(del))
 	}
 
 	inv, err := spaceblobcap.Add.Invoke(c.Issuer(), c.Connection().ID(), space.String(), caveats, delegation.WithProof(pfs...))

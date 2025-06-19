@@ -161,12 +161,12 @@ func uploadCAR(ctx context.Context, path string, c *client.Client, space did.DID
 		Shards: shdlnks,
 	}
 
-	asProofs := []delegation.Proof{}
-	for _, dlg := range proofs {
-		asProofs = append(asProofs, delegation.FromDelegation(dlg))
+	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
+	for _, del := range append(c.Proofs(), proofs...) {
+		pfs = append(pfs, delegation.FromDelegation(del))
 	}
 
-	inv, err := uploadcap.Add.Invoke(c.Issuer(), c.Connection().ID(), space.String(), caveats, delegation.WithProof(asProofs...))
+	inv, err := uploadcap.Add.Invoke(c.Issuer(), c.Connection().ID(), space.String(), caveats, delegation.WithProof(pfs...))
 	if err != nil {
 		return nil, err
 	}
