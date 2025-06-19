@@ -100,7 +100,5 @@ func (c *Client) RequestAccess(account string) (access.AuthorizeOk, error) {
 		return access.AuthorizeOk{}, fmt.Errorf("`access/authorize` failed: %w", failErr)
 	}
 
-	fmt.Printf("Access granted: %+v\n", authorizeOk)
-
 	return authorizeOk, nil
 }
