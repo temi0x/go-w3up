@@ -27,11 +27,12 @@ func main() {
 	// nil uses the default connection to the Storacha network
 	c, _ := client.NewClient(nil, client.WithPrincipal(signer))
 
+	c.AddProofs(proof)
+
 	listOk, _ := c.UploadList(
 		context.Background(),
 		space,
 		uploadcap.ListCaveats{},
-		proof,
 	)
 
 	for _, r := range listOk.Results {

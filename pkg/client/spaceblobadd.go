@@ -51,7 +51,7 @@ import (
 //
 // Returns the multihash of the added blob and the location commitment that contains details about where the
 // blob can be located, or an error if something went wrong.
-func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.DID, receiptsURL *url.URL, proofs ...delegation.Delegation) (multihash.Multihash, delegation.Delegation, error) {
+func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.DID, receiptsURL *url.URL) (multihash.Multihash, delegation.Delegation, error) {
 	contentBytes, err := io.ReadAll(content)
 	if err != nil {
 		return nil, nil, fmt.Errorf("reading content: %w", err)
@@ -69,11 +69,6 @@ func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.
 		},
 	}
 
-	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
-	for _, del := range append(c.Proofs(), proofs...) {
-		pfs = append(pfs, delegation.FromDelegation(del))
-	}
-
 	res, fx, err := invokeAndExecute[spaceblobcap.AddCaveats, spaceblobcap.AddOk](
 		ctx,
 		c,
@@ -81,7 +76,6 @@ func (c *Client) SpaceBlobAdd(ctx context.Context, content io.Reader, space did.
 		space.String(),
 		caveats,
 		spaceblobcap.AddOkType(),
-		delegation.WithProof(pfs...),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invoking and executing `space/blob/add`: %w", err)

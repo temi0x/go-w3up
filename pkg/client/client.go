@@ -118,9 +118,13 @@ func invokeAndExecute[Caveats, Out any](
 	with ucan.Resource,
 	caveats Caveats,
 	successType schema.Type,
-	options ...delegation.Option,
 ) (result.Result[Out, failure.IPLDBuilderFailure], fx.Effects, error) {
-	inv, err := capParser.Invoke(c.Issuer(), c.Connection().ID(), with, caveats, options...)
+	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
+	for _, del := range c.Proofs() {
+		pfs = append(pfs, delegation.FromDelegation(del))
+	}
+
+	inv, err := capParser.Invoke(c.Issuer(), c.Connection().ID(), with, caveats, delegation.WithProof(pfs...))
 	if err != nil {
 		return nil, nil, fmt.Errorf("generating invocation: %w", err)
 	}
@@ -135,6 +139,10 @@ func invokeAndExecute[Caveats, Out any](
 		return nil, nil, fmt.Errorf("receipt not found: %s", inv.Link())
 	}
 
+	// Note that this currently only treats handler execution errors nicely
+	// (errors returned from the invocation handler itself). Other standard errors
+	// (like authorization errors) go through the fallback error reporting below
+	// along with anything we can't forsee.
 	reader, err := receipt.NewReceiptReaderFromTypes[Out, serverdatamodel.HandlerExecutionErrorModel](successType, serverdatamodel.HandlerExecutionErrorType(), captypes.Converters...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("generating receipt reader: %w", err)
