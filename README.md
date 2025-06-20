@@ -28,6 +28,24 @@ To authorize interactively, use `go run ./cmd login` and follow the prompts.
 
 To authorize in advance, use `go run ./cmd whoami` to see the client's DID and then [delegate capabilities](#obtain-proofs) to that identity. Then, pass the proofs you create on the command line whenever you use the CLI.
 
+```
+NAME:
+   guppy - interact with the Storacha Network
+
+USAGE:
+   guppy [global options] command [command options] [arguments...]
+
+COMMANDS:
+   whoami      Print information about the current agent.
+   login       Authenticate this agent with your email address to gain access to all capabilities that have been delegated to it.
+   up, upload  Store a file(s) to the service and register an upload.
+   ls, list    List uploads in the current space.
+   help, h     Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h  show help
+```
+
 ## How to
 
 ### Generate a DID
