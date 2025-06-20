@@ -10,80 +10,23 @@ go get github.com/storacha/guppy
 
 ## Usage
 
-⚠️ Heavily WIP. At time of writing the client/CLI does not store delegations or select matching delegations for invocations. It is necessary to provide pre-selected proofs (aka delegations) when making invocations. The easiest way to obtain proofs is to use the w3up JS CLI in your local environment and delegate capabilities to the DID you'd like to use in golang. Check the [how to for obtaining proofs](#obtain-proofs).
+⚠️ Heavily WIP. At time of writing the client/CLI does not yet upload arbitrary files or directories, only prepared CAR files.
 
 ### Client library
 
-To use the client library, you should first [generate a DID](#generate-a-did) and then delegate capabilities allowing the generated DID to perform tasks. You can then use those delegations as your proofs. See the [how to for obtaining proofs](#obtain-proofs).
+There are two ways to use the client library: you can get a user to interactively log in, or bring a prepared, authorized identity.
 
-Example listing uploads:
+To have the user log in, use `(*client.Client) RequestAccess()` to have the service ask the user to authenticate, and `(*client.Client) PollClaim()` to notice when they do. ([Example](examples/loginflow/loginflow.go))
 
-```go
-package main
-
-import (
-  "net/url"
-  "ioutil"
-
-  "github.com/web3-storage/go-ucanto/did"
-  "github.com/web3-storage/go-ucanto/principal/ed25519/signer"
-  "github.com/storacha/guppy/client"
-  "github.com/storacha/guppy/delegation"
-)
-
-// private key to sign invocation UCAN with
-priv, _ := ioutil.ReadFile("path/to/private.key")
-signer, _ := signer.Parse(priv)
-
-// UCAN proof that signer can list uploads in this space (a delegation chain)
-prfbytes, _ := ioutil.ReadFile("path/to/proof.ucan")
-proof, _ := delegation.ExtractProof(b)
-
-// space to list uploads from
-space, _ := did.Parse("did:key:z6MkwDuRThQcyWjqNsK54yKAmzfsiH6BTkASyiucThMtHt1y")
-
-rcpt, _ := client.UploadList(
-   signer,
-   space,
-   &uploadlist.Caveat{},
-   proof,
-)
-
-// nil uses the default connection to the Storacha network
-c, _ := client.NewClient(nil)
-
-rcpt, err := c.UploadList(
-   space,
-   uploadlist.Caveat{},
-   proofs...,
-)
-
-for _, r := range rcpt.Out().Ok().Results {
-   fmt.Printf("%s\n", r.Root)
-}
-```
+To bring your own pre-authorized identity, instantiate the client with the option `client.WithPrincipal(signer)`. ([Example](examples/byoidentity/byoidentity.go)) You'll first need to [generate a DID](#generate-a-did) and then [delegate capabilities](#obtain-proofs) to that identity.
 
 ### CLI
 
-The CLI will automatically generate a DID for you and store it in `~/.w3up/config`. To use the CLI, you should delegate capabilities allowing that DID to perform tasks. You can then use those delegations as your proofs. You can use `go run ./cmd/w3 whoami` to print the DID (public key) - this is the DID you should delegate capabilities to. See the [how to for obtaining proofs](#obtain-proofs), optionally skipping the first step since the CLI already generated a DID for you.
+The CLI will automatically generate an identity for you and store it in `~/.w3up/config`. Like the library, there are two ways to authenticate the CLI client: interactively, or by authorizing in advance.
 
-```console
-go run ./cmd/w3.go --help
-NAME:
-   w3 - interact with the web3.storage API
+To authorize interactively, use `go run ./cmd login` and follow the prompts.
 
-USAGE:
-   w3 [global options] command [command options] [arguments...]
-
-COMMANDS:
-   whoami      Print information about the current agent.
-   up, upload  Store a file(s) to the service and register an upload.
-   ls, list    List uploads in the current space.
-   help, h     Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --help, -h  show help
-```
+To authorize in advance, use `go run ./cmd whoami` to see the client's DID and then [delegate capabilities](#obtain-proofs) to that identity. Then, pass the proofs you create on the command line whenever you use the CLI.
 
 ## How to
 
