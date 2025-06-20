@@ -44,7 +44,8 @@ Output should look something like:
 # did:key:z6Mkh9TtUbFJcUHhMmS9dEbqpBbHPbL9oxg1zziWn1CYCNZ2
 MgCb+bRGl02JqlWMPUxCyntxlYj0T/zLtR2tn8LFvw6+Yke0BKAP/OUu2tXpd+tniEoOzB3pxqxHZpRhrZl1UYUeraT0=
 ```
-You can use the private key (the line starting `Mg...`) in the CLI by setting the environment variable `W3UP_PRIVATE_KEY`. Alternatively you can use it programmatically after parsing it:
+
+You can use the private key (the line starting `Mg...`) in the CLI by setting the environment variable `GUPPY_PRIVATE_KEY`. Alternatively you can use it programmatically after parsing it:
 
 ```go
 package main

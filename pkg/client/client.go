@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+
 	uclient "github.com/storacha/go-ucanto/client"
 	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/did"
@@ -40,6 +42,11 @@ func NewClient(connection uclient.Connection, options ...Option) (*Client, error
 		c.data.Principal = newPrincipal
 	}
 
+	err := c.save()
+	if err != nil {
+		return nil, err
+	}
+
 	return &c, nil
 }
 
@@ -69,8 +76,17 @@ func (c *Client) Proofs() []delegation.Delegation {
 // AddProofs adds the given delegations to the client's data and saves it.
 func (c *Client) AddProofs(delegations ...delegation.Delegation) error {
 	c.data.Delegations = append(c.data.Delegations, delegations...)
-	if c.saveFn != nil {
-		return c.saveFn(c.data)
+	return c.save()
+}
+
+func (c *Client) save() error {
+	if c.saveFn == nil {
+		return nil
+	}
+
+	err := c.saveFn(c.data)
+	if err != nil {
+		return fmt.Errorf("saving client data: %w", err)
 	}
 	return nil
 }

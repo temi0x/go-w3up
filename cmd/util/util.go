@@ -2,7 +2,9 @@ package util
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/url"
 	"os"
@@ -11,6 +13,7 @@ import (
 	uclient "github.com/storacha/go-ucanto/client"
 	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/did"
+	"github.com/storacha/go-ucanto/principal"
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
 	"github.com/storacha/go-ucanto/transport/car"
 	"github.com/storacha/go-ucanto/transport/http"
@@ -20,6 +23,17 @@ import (
 )
 
 const defaultServiceName = "staging.up.storacha.network"
+
+// envSigner returns a principal.Signer from the environment variable
+// GUPPY_PRIVATE_KEY, if any.
+func envSigner() (principal.Signer, error) {
+	str := os.Getenv("GUPPY_PRIVATE_KEY") // use env var preferably
+	if str == "" {
+		return nil, nil // no signer in the environment
+	}
+
+	return signer.Parse(str)
+}
 
 func MustGetClient() *client.Client {
 	homedir, err := os.UserHomeDir()
@@ -33,21 +47,45 @@ func MustGetClient() *client.Client {
 	data, err := agentdata.ReadFromFile(datapath)
 
 	if err != nil {
-		s, err := signer.Generate()
-		if err != nil {
-			log.Fatalf("generating signer: %s", err)
+		if !errors.Is(err, fs.ErrNotExist) {
+			log.Fatalf("reading agent data: %s", err)
 		}
-		data.Principal = s
-		data.WriteToFile(datapath)
+
+		// If the file doesn't exist yet, that's fine, but make sure the directory
+		// exists to save into later.
+		if err := os.MkdirAll(datadir, 0700); err != nil {
+			log.Fatalf("creating data directory: %s", err)
+		}
+	}
+
+	clientOptions := []client.Option{
+		client.WithData(data),
+		client.WithSaveFn(func(data agentdata.AgentData) error {
+			return data.WriteToFile(datapath)
+		}),
+	}
+
+	// Use the principal from the environment if given.
+	if s, err := envSigner(); err != nil {
+		log.Fatalf("parsing GUPPY_PRIVATE_KEY: %s", err)
+	} else if s != nil {
+		// If a principal is provided, use that, and ignore the saved data.
+		clientOptions = []client.Option{
+			client.WithPrincipal(s),
+		}
+	} else {
+		// Otherwise, read and write the saved data.
+		clientOptions = []client.Option{
+			client.WithData(data),
+			client.WithSaveFn(func(data agentdata.AgentData) error {
+				return data.WriteToFile(datapath)
+			}),
+		}
 	}
 
 	c, err := client.NewClient(
 		MustGetConnection(),
-		client.WithData(data),
-		client.WithSaveFn(func(data agentdata.AgentData) error {
-			data.WriteToFile(datapath)
-			return nil
-		}),
+		clientOptions...,
 	)
 	if err != nil {
 		log.Fatalf("creating client: %s", err)
