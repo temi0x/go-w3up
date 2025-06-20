@@ -46,7 +46,16 @@ rcpt, _ := client.UploadList(
    signer,
    space,
    &uploadlist.Caveat{},
-   client.WithProof(proof),
+   proof,
+)
+
+// nil uses the default connection to the Storacha network
+c, _ := client.NewClient(nil)
+
+rcpt, err := c.UploadList(
+   space,
+   uploadlist.Caveat{},
+   proofs...,
 )
 
 for _, r := range rcpt.Out().Ok().Results {

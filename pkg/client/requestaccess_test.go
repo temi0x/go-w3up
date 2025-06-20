@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/storacha/go-libstoracha/capabilities/access"
@@ -24,9 +25,10 @@ func TestRequestAccess(t *testing.T) {
 				server.Provide(
 					access.Authorize,
 					func(
+						ctx context.Context,
 						cap ucan.Capability[access.AuthorizeCaveats],
 						inv invocation.Invocation,
-						ctx server.InvocationContext,
+						context server.InvocationContext,
 					) (access.AuthorizeOk, fx.Effects, error) {
 						invokedInvocations = append(invokedInvocations, inv)
 						invokedCapabilities = append(invokedCapabilities, cap)
@@ -41,7 +43,7 @@ func TestRequestAccess(t *testing.T) {
 
 		c := uhelpers.Must(client.NewClient(connection))
 
-		authOk, err := c.RequestAccess("did:mailto:example.com:alice")
+		authOk, err := c.RequestAccess(testContext(t), "did:mailto:example.com:alice")
 
 		require.Len(t, invokedInvocations, 1, "expected exactly one invocation to be invoked")
 		invocation := invokedInvocations[0]

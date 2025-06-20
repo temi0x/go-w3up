@@ -3,7 +3,6 @@ package client_test
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"net/http"
@@ -38,6 +37,7 @@ import (
 	ed25519signer "github.com/storacha/go-ucanto/principal/ed25519/signer"
 	"github.com/storacha/go-ucanto/principal/signer"
 	"github.com/storacha/go-ucanto/server"
+	uhelpers "github.com/storacha/go-ucanto/testing/helpers"
 	"github.com/storacha/go-ucanto/transport/car"
 	carresp "github.com/storacha/go-ucanto/transport/car/response"
 	uhttp "github.com/storacha/go-ucanto/transport/http"
@@ -48,11 +48,6 @@ import (
 )
 
 func TestBlobAdd(t *testing.T) {
-	issuer, err := ed25519signer.Generate()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	space, err := ed25519signer.Generate()
 	if err != nil {
 		t.Fatal(err)
@@ -84,16 +79,18 @@ func TestBlobAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	c := uhelpers.Must(client.NewClient(conn))
+
 	// delegate * to the space
 	cap := ucan.NewCapability("*", space.DID().String(), ucan.NoCaveats{})
-	proof, err := delegation.Delegate(space, issuer, []ucan.Capability[ucan.NoCaveats]{cap}, delegation.WithNoExpiration())
+	proof, err := delegation.Delegate(space, c.Issuer(), []ucan.Capability[ucan.NoCaveats]{cap}, delegation.WithNoExpiration())
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	testBlob := bytes.NewReader([]byte("test"))
 
-	_, _, err = client.SpaceBlobAdd(context.Background(), testBlob, issuer, space.DID(), receiptsURL, client.WithConnection(conn), client.WithProof(proof))
+	_, _, err = c.SpaceBlobAdd(testContext(t), testBlob, space.DID(), receiptsURL, proof)
 	require.NoError(t, err)
 }
 
@@ -184,7 +181,8 @@ func setupTestUCANServer(t *testing.T, serverPrincipal principal.Signer, putBlob
 
 	spaceBlobAddMethod := server.Provide(
 		spaceblobcap.Add,
-		func(cap ucan.Capability[spaceblobcap.AddCaveats], inv invocation.Invocation, ctx server.InvocationContext) (spaceblobcap.AddOk, fx.Effects, error) {
+		func(ctx context.Context,
+			cap ucan.Capability[spaceblobcap.AddCaveats], inv invocation.Invocation, context server.InvocationContext) (spaceblobcap.AddOk, fx.Effects, error) {
 			// add task for blob/allocate
 			blobDigest := cap.Nb().Blob.Digest
 			blobSize := cap.Nb().Blob.Size
@@ -318,7 +316,7 @@ func setupTestUCANServer(t *testing.T, serverPrincipal principal.Signer, putBlob
 	// ucan/conclude handler
 	ucanConcludeMethod := server.Provide(
 		ucancap.Conclude,
-		func(capability ucan.Capability[ucancap.ConcludeCaveats], invocation invocation.Invocation, context server.InvocationContext) (ucancap.ConcludeOk, fx.Effects, error) {
+		func(ctx context.Context, capability ucan.Capability[ucancap.ConcludeCaveats], invocation invocation.Invocation, context server.InvocationContext) (ucancap.ConcludeOk, fx.Effects, error) {
 			return ucancap.ConcludeOk{}, nil, nil
 		},
 	)
@@ -326,7 +324,7 @@ func setupTestUCANServer(t *testing.T, serverPrincipal principal.Signer, putBlob
 	// upload/add handler
 	uploadAddMethod := server.Provide(
 		uploadcap.Add,
-		func(capability ucan.Capability[uploadcap.AddCaveats], invocation invocation.Invocation, context server.InvocationContext) (uploadcap.AddOk, fx.Effects, error) {
+		func(ctx context.Context, capability ucan.Capability[uploadcap.AddCaveats], invocation invocation.Invocation, context server.InvocationContext) (uploadcap.AddOk, fx.Effects, error) {
 			return uploadcap.AddOk{}, nil, nil
 		},
 	)
@@ -349,7 +347,7 @@ func setupHTTPHandlers(t *testing.T, mux *http.ServeMux, ucanSrv server.ServerVi
 	// ucan handler
 	ucanPath := fmt.Sprintf("POST %s", ucanURL.Path)
 	mux.HandleFunc(ucanPath, func(w http.ResponseWriter, r *http.Request) {
-		res, _ := ucanSrv.Request(uhttp.NewHTTPRequest(r.Body, r.Header))
+		res, _ := ucanSrv.Request(testContext(t), uhttp.NewHTTPRequest(r.Body, r.Header))
 
 		for key, vals := range res.Headers() {
 			for _, v := range vals {
@@ -441,19 +439,4 @@ func setupHTTPHandlers(t *testing.T, mux *http.ServeMux, ucanSrv server.ServerVi
 
 		w.WriteHeader(resp.Status())
 	})
-}
-
-func randomMultihash(t *testing.T) multihash.Multihash {
-	bytes := make([]byte, 10)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	digest, err := multihash.Sum(bytes, multihash.SHA2_256, -1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return digest
 }

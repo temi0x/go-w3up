@@ -22,15 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// testContext returns the `t.Context()` if available, or a background context
-// on older versions of Go.
-func testContext(t *testing.T) context.Context {
-	if tCtx, ok := any(t).(interface{ Context() context.Context }); ok {
-		return tCtx.Context()
-	}
-	return context.Background()
-}
-
 type factBuilder map[string]ipld.Builder
 
 func (fs factBuilder) ToIPLD() (map[string]datamodel.Node, error) {
@@ -66,9 +57,10 @@ func TestPollClaim(t *testing.T) {
 			server.Provide(
 				access.Claim,
 				func(
+					ctx context.Context,
 					cap ucan.Capability[access.ClaimCaveats],
 					inv invocation.Invocation,
-					ctx server.InvocationContext,
+					context server.InvocationContext,
 				) (access.ClaimOk, fx.Effects, error) {
 					var response result.Result[access.ClaimOk, error]
 					if len(responses) == 0 {

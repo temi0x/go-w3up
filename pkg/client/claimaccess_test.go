@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"testing"
@@ -45,9 +46,10 @@ func TestClaimAccess(t *testing.T) {
 				server.Provide(
 					access.Claim,
 					func(
+						ctx context.Context,
 						cap ucan.Capability[access.ClaimCaveats],
 						inv invocation.Invocation,
-						ctx server.InvocationContext,
+						context server.InvocationContext,
 					) (access.ClaimOk, fx.Effects, error) {
 						assert.Equal(t, c.Issuer().DID().String(), cap.With(), "expected to claim access for the agent")
 
@@ -68,7 +70,7 @@ func TestClaimAccess(t *testing.T) {
 		))
 		storedDels = buildDelegationsModel(del)
 
-		claimedDels, err := c.ClaimAccess()
+		claimedDels, err := c.ClaimAccess(testContext(t))
 
 		require.NoError(t, err)
 		require.Len(t, claimedDels, 1, "expected exactly one delegation to be claimed")
@@ -82,9 +84,10 @@ func TestClaimAccess(t *testing.T) {
 				server.Provide(
 					access.Claim,
 					func(
+						ctx context.Context,
 						cap ucan.Capability[access.ClaimCaveats],
 						inv invocation.Invocation,
-						ctx server.InvocationContext,
+						context server.InvocationContext,
 					) (access.ClaimOk, fx.Effects, error) {
 						return access.ClaimOk{}, nil, fmt.Errorf("Something went wrong!")
 					},
@@ -93,7 +96,7 @@ func TestClaimAccess(t *testing.T) {
 		)
 
 		c := uhelpers.Must(client.NewClient(connection))
-		claimedDels, err := c.ClaimAccess()
+		claimedDels, err := c.ClaimAccess(testContext(t))
 
 		require.ErrorContains(t, err, "`access/claim` failed: Something went wrong!")
 		require.Len(t, claimedDels, 0)
@@ -105,7 +108,7 @@ func TestClaimAccess(t *testing.T) {
 		connection := newTestServerConnection()
 
 		c := uhelpers.Must(client.NewClient(connection))
-		claimedDels, err := c.ClaimAccess()
+		claimedDels, err := c.ClaimAccess(testContext(t))
 
 		require.ErrorContains(t, err, "`access/claim` failed with unexpected error:")
 		require.ErrorContains(t, err, "HandlerNotFoundError")

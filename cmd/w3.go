@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/core/result"
 	"github.com/storacha/guppy/cmd/util"
 	"github.com/storacha/guppy/pkg/capability/uploadlist"
-	"github.com/storacha/guppy/pkg/client"
+	"github.com/storacha/guppy/pkg/didmailto"
 	"github.com/urfave/cli/v2"
 )
 
@@ -22,6 +24,12 @@ func main() {
 				Name:   "whoami",
 				Usage:  "Print information about the current agent.",
 				Action: whoami,
+			},
+			{
+				Name:      "login",
+				Usage:     "Authenticate this agent with your email address to gain access to all capabilities that have been delegated to it.",
+				UsageText: "login <email>",
+				Action:    login,
 			},
 			{
 				Name:    "up",
@@ -107,23 +115,64 @@ func main() {
 }
 
 func whoami(cCtx *cli.Context) error {
-	s := util.MustGetSigner()
-	fmt.Println(s.DID())
+	c := util.MustGetClient()
+	fmt.Println(c.DID())
+	return nil
+}
+
+func login(cCtx *cli.Context) error {
+	email := cCtx.Args().First()
+	if email == "" {
+		return fmt.Errorf("email address is required")
+	}
+
+	accountDid, err := didmailto.FromEmail(email)
+	if err != nil {
+		return fmt.Errorf("invalid email address: %w", err)
+	}
+
+	c := util.MustGetClient()
+
+	authOk, err := c.RequestAccess(cCtx.Context, accountDid.String())
+	if err != nil {
+		return fmt.Errorf("requesting access: %w", err)
+	}
+
+	resultChan := c.PollClaim(cCtx.Context, authOk)
+
+	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond) // Spinner: ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏
+	s.Suffix = fmt.Sprintf(" 🔗 please click the link sent to %s to authorize this agent", email)
+	s.Start()
+	// FIXME: This is meant to clean up if we SIGINT (Ctrl+C) the process, but doesn't.
+	defer s.Stop()
+	claimedDels, err := result.Unwrap(<-resultChan)
+	s.Stop()
+
+	if err != nil {
+		return fmt.Errorf("claiming access: %w", err)
+	}
+
+	fmt.Println("Successfully logged in!", claimedDels)
+	c.AddProofs(claimedDels...)
+
 	return nil
 }
 
 func ls(cCtx *cli.Context) error {
-	signer := util.MustGetSigner()
-	conn := util.MustGetConnection()
+	c := util.MustGetClient()
 	space := util.MustParseDID(cCtx.String("space"))
-	proof := util.MustGetProof(cCtx.String("proof"))
 
-	rcpt, err := client.UploadList(
-		signer,
+	proofs := []delegation.Delegation{}
+	if cCtx.String("proof") != "" {
+		proof := util.MustGetProof(cCtx.String("proof"))
+		proofs = append(proofs, proof)
+	}
+
+	rcpt, err := c.UploadList(
+		cCtx.Context,
 		space,
 		uploadlist.Caveat{},
-		client.WithConnection(conn),
-		client.WithProofs([]delegation.Delegation{proof}),
+		proofs...,
 	)
 	if err != nil {
 		return err
