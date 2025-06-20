@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/storacha/go-ucanto/core/result"
+	"github.com/storacha/go-libstoracha/capabilities/upload"
 	"github.com/storacha/go-ucanto/did"
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
-	"github.com/storacha/guppy/pkg/capability/uploadlist"
 	"github.com/storacha/guppy/pkg/client"
 	"github.com/storacha/guppy/pkg/delegation"
 )
@@ -28,16 +27,14 @@ func main() {
 	// nil uses the default connection to the Storacha network
 	c, _ := client.NewClient(nil, client.WithPrincipal(signer))
 
-	rcpt, _ := c.UploadList(
+	listOk, _ := c.UploadList(
 		context.Background(),
 		space,
-		uploadlist.Caveat{},
+		upload.ListCaveats{},
 		proof,
 	)
 
-	ok, _ := result.Unwrap(rcpt.Out())
-
-	for _, r := range ok.Results {
+	for _, r := range listOk.Results {
 		fmt.Printf("%s\n", r.Root)
 	}
 }
