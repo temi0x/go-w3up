@@ -17,8 +17,8 @@ import (
 
 func main() {
 	app := &cli.App{
-		Name:  "w3",
-		Usage: "interact with the web3.storage API",
+		Name:  "guppy",
+		Usage: "interact with the Storacha Network",
 		Commands: []*cli.Command{
 			{
 				Name:   "whoami",
