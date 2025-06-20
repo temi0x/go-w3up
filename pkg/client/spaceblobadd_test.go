@@ -21,7 +21,6 @@ import (
 	blobcap "github.com/storacha/go-libstoracha/capabilities/blob"
 	httpcap "github.com/storacha/go-libstoracha/capabilities/http"
 	spaceblobcap "github.com/storacha/go-libstoracha/capabilities/space/blob"
-	"github.com/storacha/go-libstoracha/capabilities/types"
 	captypes "github.com/storacha/go-libstoracha/capabilities/types"
 	ucancap "github.com/storacha/go-libstoracha/capabilities/ucan"
 	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
@@ -304,8 +303,8 @@ func setupTestUCANServer(t *testing.T, serverPrincipal principal.Signer, putBlob
 			fxs := fx.NewEffects(fx.WithFork(forks...))
 
 			ok := spaceblobcap.AddOk{
-				Site: types.Promise{
-					UcanAwait: types.Await{
+				Site: captypes.Promise{
+					UcanAwait: captypes.Await{
 						Selector: ".out.ok.site",
 						Link:     acceptInv.Root().Link(),
 					},

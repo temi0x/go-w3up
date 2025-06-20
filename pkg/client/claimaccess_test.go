@@ -18,10 +18,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func buildDelegationsModel(dels ...delegation.Delegation) access.DelegationsModel {
+	keys := make([]string, 0, len(dels))
+	values := make(map[string][]byte, len(dels))
+
+	for _, del := range dels {
+		keys = append(keys, del.Link().String())
+		values[del.Link().String()] = uhelpers.Must(io.ReadAll(del.Archive()))
+	}
+
+	return access.DelegationsModel{
+		Keys:   keys,
+		Values: values,
+	}
+}
+
 func TestClaimAccess(t *testing.T) {
 	t.Run("returns the delegations from `access/claim`'s receipt", func(t *testing.T) {
 		// Declare these up front to refer to them in the service method.
-		var storedDel delegation.Delegation
+		var storedDels access.DelegationsModel
 		var c *client.Client
 
 		connection := newTestServerConnection(
@@ -36,14 +51,7 @@ func TestClaimAccess(t *testing.T) {
 					) (access.ClaimOk, fx.Effects, error) {
 						assert.Equal(t, c.Issuer().DID().String(), cap.With(), "expected to claim access for the agent")
 
-						return access.ClaimOk{
-							Delegations: access.DelegationsModel{
-								Keys: []string{storedDel.Link().String()},
-								Values: map[string][]byte{
-									storedDel.Link().String(): uhelpers.Must(io.ReadAll(storedDel.Archive())),
-								},
-							},
-						}, nil, nil
+						return access.ClaimOk{Delegations: storedDels}, nil, nil
 					},
 				),
 			),
@@ -52,18 +60,19 @@ func TestClaimAccess(t *testing.T) {
 		c = uhelpers.Must(client.NewClient(connection))
 
 		// Some arbitrary delegation which has been stored to be claimed.
-		storedDel = uhelpers.Must(upload.Get.Delegate(
+		del := uhelpers.Must(upload.Get.Delegate(
 			c.Issuer(),
 			c.Issuer(),
 			c.Issuer().DID().String(),
 			upload.GetCaveats{Root: uhelpers.RandomCID()},
 		))
+		storedDels = buildDelegationsModel(del)
 
 		claimedDels, err := c.ClaimAccess()
 
 		require.NoError(t, err)
 		require.Len(t, claimedDels, 1, "expected exactly one delegation to be claimed")
-		require.Equal(t, storedDel.Link().String(), claimedDels[0].Link().String(), "expected the claimed delegation to match the stored one")
+		require.Equal(t, del.Link().String(), claimedDels[0].Link().String(), "expected the claimed delegation to match the stored one")
 	})
 
 	t.Run("returns any handler error", func(t *testing.T) {
