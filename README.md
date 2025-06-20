@@ -22,7 +22,7 @@ To bring your own pre-authorized identity, instantiate the client with the optio
 
 ### CLI
 
-The CLI will automatically generate an identity for you and store it in `~/.w3up/config`. Like the library, there are two ways to authenticate the CLI client: interactively, or by authorizing in advance.
+The CLI will automatically generate an identity for you and store it in `~/.guppy/config`. Like the library, there are two ways to authenticate the CLI client: interactively, or by authorizing in advance.
 
 To authorize interactively, use `go run ./cmd login` and follow the prompts.
 
@@ -56,20 +56,20 @@ signer, _ := signer.Parse("MgCb+bRGl02JqlWMPUxCyntxlYj0T/zLtR2tn8LFvw6+Yke0BKAP/
 
 ### Obtain proofs
 
-Proofs are delegations to your DID enabling it to perform tasks. Currently the best way to obtain proofs that will allow you to interact with the web3.storage API is to use the w3up JS CLI:
+Proofs are delegations to your DID enabling it to perform tasks. Currently the best way to obtain proofs that will allow you to interact with the Storacha Network is to use the Storacha JS CLI:
 
 1. [Generate a DID](#generate-a-did) and make a note of it (the string starting with `did:key:...`)
-1. Install w3 CLI:
+2. Install w3 CLI:
     ```sh
-    npm install -g @web3-storage/w3cli
+    npm install -g @storacha/cli
     ```
-1. Create a space:
+3. Create a space:
     ```sh
-    w3 space create <NAME>
+    storacha space create <NAME>
     ```
-1. Delegate capabilities to your DID:
+4. Delegate capabilities to your DID:
     ```sh
-    w3 delegation create -c 'store/*' -c 'upload/*' <DID>`
+    storacha delegation create -c 'store/*' -c 'upload/*' <DID>`
     ```
 
 ## API

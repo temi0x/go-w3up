@@ -27,7 +27,7 @@ func MustGetClient() *client.Client {
 		log.Fatalf("obtaining user home directory: %s", err)
 	}
 
-	datadir := path.Join(homedir, ".w3up")
+	datadir := path.Join(homedir, ".guppy")
 	datapath := path.Join(datadir, "config.json")
 
 	data, err := agentdata.ReadFromFile(datapath)

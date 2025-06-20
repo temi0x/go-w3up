@@ -22,8 +22,8 @@ builds:
       - linux
       - windows
       - darwin
-    main: ./cmd/w3.go
-    binary: w3
+    main: ./cmd/main.go
+    binary: guppy
 
 archives:
   - format: tar.gz
