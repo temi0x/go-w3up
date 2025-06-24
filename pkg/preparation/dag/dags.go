@@ -10,7 +10,6 @@ import (
 	"github.com/storacha/guppy/pkg/preparation/dag/file"
 	"github.com/storacha/guppy/pkg/preparation/dag/model"
 	"github.com/storacha/guppy/pkg/preparation/dag/visitor"
-	scansmodel "github.com/storacha/guppy/pkg/preparation/scans/model"
 	"github.com/storacha/guppy/pkg/preparation/types"
 )
 
@@ -26,7 +25,7 @@ type DAGAPI struct {
 	UnixFSParams UnixFSParamsFn
 }
 
-type FileAccessorFn func(ctx context.Context, fsEntryID scansmodel.FSEntryID) (fs.File, types.SourceID, string, error)
+type FileAccessorFn func(ctx context.Context, fsEntryID types.FSEntryID) (fs.File, types.SourceID, string, error)
 type UnixFSParamsFn func(ctx context.Context, uploadID types.UploadID) UnixFSParams
 
 // ExecuteDAGScan executes a dag scan on the given fs entry, creating a unix fs dag for the given file or directory.

@@ -8,8 +8,7 @@ import (
 	"github.com/storacha/guppy/pkg/preparation/types"
 )
 
-type ScanID = uuid.UUID
-
+// ScanState represents the state of a scan.
 type ScanState string
 
 const (
@@ -36,10 +35,10 @@ func validScanState(state ScanState) bool {
 
 // Scan represents a single scan of a source, usually associated with an upload
 type Scan struct {
-	id           ScanID
+	id           types.ScanID
 	uploadID     types.UploadID
 	sourceID     types.SourceID
-	rootID       *FSEntryID // rootID is the ID of the root directory of the scan, if it has been completed
+	rootID       *types.FSEntryID // rootID is the ID of the root directory of the scan, if it has been completed
 	createdAt    time.Time
 	updatedAt    time.Time
 	errorMessage *string
@@ -71,7 +70,7 @@ func validateScan(s *Scan) (*Scan, error) {
 
 // accessors
 
-func (s *Scan) ID() ScanID {
+func (s *Scan) ID() types.ScanID {
 	return s.id
 }
 
@@ -105,7 +104,7 @@ func (s *Scan) HasRootID() bool {
 	return s.rootID != nil
 }
 
-func (s *Scan) RootID() FSEntryID {
+func (s *Scan) RootID() types.FSEntryID {
 	if s.rootID == nil {
 		return uuid.Nil // Return an empty FSEntryID if rootID is not set
 	}
@@ -122,7 +121,7 @@ func (s *Scan) Fail(errorMessage string) error {
 	return nil
 }
 
-func (s *Scan) Complete(rootID FSEntryID) error {
+func (s *Scan) Complete(rootID types.FSEntryID) error {
 	if s.state != ScanStateRunning {
 		return fmt.Errorf("cannot complete scan in state %s", s.state)
 	}
@@ -165,7 +164,7 @@ func NewScan(uploadID types.UploadID, sourceID types.SourceID) (*Scan, error) {
 	return validateScan(scan)
 }
 
-type ScanScanner func(id *ScanID, uploadID *types.UploadID, sourceID *types.SourceID, rootID **FSEntryID, createdAt *time.Time, updatedAt *time.Time, state *ScanState, errorMessage **string) error
+type ScanScanner func(id *types.ScanID, uploadID *types.UploadID, sourceID *types.SourceID, rootID **types.FSEntryID, createdAt *time.Time, updatedAt *time.Time, state *ScanState, errorMessage **string) error
 
 func ReadScanFromDatabase(scanner ScanScanner) (*Scan, error) {
 	scan := &Scan{}
@@ -176,7 +175,7 @@ func ReadScanFromDatabase(scanner ScanScanner) (*Scan, error) {
 	return validateScan(scan)
 }
 
-type ScanWriter func(id ScanID, uploadID types.UploadID, sourceID types.SourceID, rootID *FSEntryID, createdAt time.Time, updatedAt time.Time, state ScanState, errorMessage *string) error
+type ScanWriter func(id types.ScanID, uploadID types.UploadID, sourceID types.SourceID, rootID *types.FSEntryID, createdAt time.Time, updatedAt time.Time, state ScanState, errorMessage *string) error
 
 func WriteScanToDatabase(scan *Scan, writer ScanWriter) error {
 	return writer(scan.id, scan.uploadID, scan.sourceID, scan.rootID, scan.createdAt, scan.updatedAt, scan.state, scan.errorMessage)

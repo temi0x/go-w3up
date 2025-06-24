@@ -16,5 +16,5 @@ type Repo interface {
 	CreateDirectoryChildren(ctx context.Context, parent *model.Directory, children []model.FSEntry) error
 	DirectoryChildren(ctx context.Context, dir *model.Directory) ([]model.FSEntry, error)
 	UpdateScan(ctx context.Context, scan *model.Scan) error
-	GetFileByID(ctx context.Context, fileID model.FSEntryID) (*model.File, error)
+	GetFileByID(ctx context.Context, fileID types.FSEntryID) (*model.File, error)
 }
