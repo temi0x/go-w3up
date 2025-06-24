@@ -21,7 +21,7 @@ const (
 
 // Source represents a data source.
 type Source struct {
-	id               uuid.UUID
+	id               types.SourceID
 	name             string
 	createdAt        time.Time
 	updatedAt        time.Time
@@ -31,7 +31,7 @@ type Source struct {
 }
 
 // ID returns the unique identifier of the source.
-func (s *Source) ID() uuid.UUID {
+func (s *Source) ID() types.SourceID {
 	return s.id
 }
 
@@ -99,7 +99,7 @@ func NewSource(name string, path string, opts ...SourceOption) (*Source, error) 
 }
 
 // SourceRowScanner is a function type for scanning a source row from the database.
-type SourceRowScanner func(id *uuid.UUID, name *string, createdAt *time.Time, updatedAt *time.Time, kind *SourceKind, path *string, connectionParams *ConnectionParams) error
+type SourceRowScanner func(id *types.SourceID, name *string, createdAt *time.Time, updatedAt *time.Time, kind *SourceKind, path *string, connectionParams *ConnectionParams) error
 
 // ReadSourceFromDatabase reads a Source from the database using the provided scanner function.
 func ReadSourceFromDatabase(scanner SourceRowScanner) (*Source, error) {
