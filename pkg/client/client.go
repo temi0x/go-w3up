@@ -118,13 +118,14 @@ func invokeAndExecute[Caveats, Out any](
 	with ucan.Resource,
 	caveats Caveats,
 	successType schema.Type,
+	options ...delegation.Option,
 ) (result.Result[Out, failure.IPLDBuilderFailure], fx.Effects, error) {
 	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
 	for _, del := range c.Proofs() {
 		pfs = append(pfs, delegation.FromDelegation(del))
 	}
 
-	inv, err := capParser.Invoke(c.Issuer(), c.Connection().ID(), with, caveats, delegation.WithProof(pfs...))
+	inv, err := capParser.Invoke(c.Issuer(), c.Connection().ID(), with, caveats, append(options, delegation.WithProof(pfs...))...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("generating invocation: %w", err)
 	}
