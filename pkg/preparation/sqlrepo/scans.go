@@ -23,14 +23,44 @@ func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmo
 	}
 
 	insertQuery := `
-		INSERT INTO scans (id, upload_id, root_id, created_at, updated_at, state, error_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO scans (
+			id,
+			upload_id,
+			root_id,
+			created_at,
+			updated_at,
+			state,
+			error_message
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
-	err = scanmodel.WriteScanToDatabase(scan, func(id types.ScanID, uploadID types.UploadID, rootID *types.FSEntryID, createdAt, updatedAt time.Time, state scanmodel.ScanState, errorMessage *string) error {
-		_, err := r.db.ExecContext(ctx, insertQuery, id, uploadID, Null(rootID), createdAt, updatedAt, state, NullString(errorMessage))
-		return err
-	})
+	err = scanmodel.WriteScanToDatabase(
+		scan,
+		func(
+			id types.ScanID,
+			uploadID types.UploadID,
+			rootID *types.FSEntryID,
+			createdAt,
+			updatedAt time.Time,
+			state scanmodel.ScanState,
+			errorMessage *string) error {
+			_, err := r.db.ExecContext(
+				ctx,
+				insertQuery,
+				id[:],
+				uploadID[:],
+				Null(rootID),
+				createdAt.Unix(),
+				updatedAt.Unix(),
+				state,
+				NullString(errorMessage),
+			)
+			return err
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	return scan, nil
 }
