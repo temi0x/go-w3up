@@ -1,7 +1,6 @@
 package util
 
 import (
-	_ "embed"
 	"errors"
 	"fmt"
 	"io/fs"
