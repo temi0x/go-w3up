@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -49,57 +47,44 @@ var schema string
 
 // createTestDB creates a temporary SQLite database for testing. It returns the
 // database connection, a cleanup function, and any error encountered.
-func createTestDB(t *testing.T) (*sql.DB, error) {
-	dir, err := os.MkdirTemp("", "sqlrepo_test")
-	if err != nil {
-		return nil, err
-	}
-
-	fn := filepath.Join(dir, "db")
-
-	db, err := sql.Open("sqlite", fn)
-	if err != nil {
-		return nil, err
-	}
+func createTestDB(t *testing.T) *sql.DB {
+	db, err := sql.Open("sqlite", ":memory:")
+	require.NoError(t, err, "failed to open in-memory SQLite database")
 
 	t.Cleanup(func() {
 		db.Close()
-		os.RemoveAll(dir)
 	})
 
-	if _, err = db.ExecContext(t.Context(), schema); err != nil {
-		return nil, err
-	}
+	_, err = db.ExecContext(t.Context(), schema)
+	require.NoError(t, err, "failed to execute schema")
 
-	return db, nil
+	// Disable foreign key checks to simplify test.
+	_, err = db.ExecContext(t.Context(), "PRAGMA foreign_keys = OFF;")
+	require.NoError(t, err, "failed to disable foreign keys")
+
+	return db
 }
 
 func TestCreateScan(t *testing.T) {
-	db, err := createTestDB(t)
-	require.NoError(t, err)
-
-	// Disable foreign key checks to simplify test.
-	db.ExecContext(t.Context(), "PRAGMA foreign_keys = OFF;")
-
-	repo := sqlrepo.New(db)
-
 	t.Run("with an upload ID", func(t *testing.T) {
+		db := createTestDB(t)
+		repo := sqlrepo.New(db)
 		uploadID := uuid.New()
 
 		scan, err := repo.CreateScan(t.Context(), uploadID)
 		require.NoError(t, err)
 
 		rows, err := db.QueryContext(t.Context(), `
-	  SELECT 
-			id,
-			upload_id,
-			root_id,
-			created_at,
-			updated_at,
-			state,
-			error_message
-		FROM scans
-	`)
+			SELECT 
+				id,
+				upload_id,
+				root_id,
+				created_at,
+				updated_at,
+				state,
+				error_message
+			FROM scans
+		`)
 		require.NoError(t, err)
 
 		rows.Next()
@@ -133,11 +118,13 @@ func TestCreateScan(t *testing.T) {
 	})
 
 	t.Run("with a nil upload ID", func(t *testing.T) {
+		repo := sqlrepo.New(createTestDB(t))
 		_, err := repo.CreateScan(t.Context(), uuid.Nil)
 		require.ErrorContains(t, err, "update id cannot be empty")
 	})
 
 	t.Run("when the DB fails", func(t *testing.T) {
+		repo := sqlrepo.New(createTestDB(t))
 		uploadID := uuid.New()
 
 		// Simulate a DB failure by cancelling the context before the operation.
