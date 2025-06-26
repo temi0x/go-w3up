@@ -16,7 +16,6 @@ var _ scans.Repo = (*repo)(nil)
 
 // CreateScan creates a new scan in the repository with the given upload ID.
 func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmodel.Scan, error) {
-
 	scan, err := scanmodel.NewScan(uploadID)
 	if err != nil {
 		return nil, err

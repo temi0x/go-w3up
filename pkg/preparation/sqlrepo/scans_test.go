@@ -1,6 +1,7 @@
 package sqlrepo_test
 
 import (
+	"context"
 	"database/sql"
 	_ "embed"
 	"fmt"
@@ -82,12 +83,13 @@ func TestCreateScan(t *testing.T) {
 
 	repo := sqlrepo.New(db)
 
-	uploadID := uuid.New()
+	t.Run("with an upload ID", func(t *testing.T) {
+		uploadID := uuid.New()
 
-	scan, err := repo.CreateScan(t.Context(), uploadID)
-	require.NoError(t, err)
+		scan, err := repo.CreateScan(t.Context(), uploadID)
+		require.NoError(t, err)
 
-	rows, err := db.QueryContext(t.Context(), `
+		rows, err := db.QueryContext(t.Context(), `
 	  SELECT 
 			id,
 			upload_id,
@@ -98,34 +100,51 @@ func TestCreateScan(t *testing.T) {
 			error_message
 		FROM scans
 	`)
-	require.NoError(t, err)
+		require.NoError(t, err)
 
-	rows.Next()
-	readScan, err := model.ReadScanFromDatabase(func(
-		id,
-		uploadID *types.SourceID,
-		rootID **types.FSEntryID,
-		createdAt,
-		updatedAt *time.Time,
-		state *model.ScanState,
-		errorMessage **string,
-	) error {
-
-		err := rows.Scan(
+		rows.Next()
+		readScan, err := model.ReadScanFromDatabase(func(
 			id,
-			uploadID,
-			rootID,
-			timestampScanner(createdAt),
-			timestampScanner(updatedAt),
-			state,
-			errorMessage,
-		)
-		if err != nil {
-			return err
-		}
+			uploadID *types.SourceID,
+			rootID **types.FSEntryID,
+			createdAt,
+			updatedAt *time.Time,
+			state *model.ScanState,
+			errorMessage **string,
+		) error {
 
-		return nil
+			err := rows.Scan(
+				id,
+				uploadID,
+				rootID,
+				timestampScanner(createdAt),
+				timestampScanner(updatedAt),
+				state,
+				errorMessage,
+			)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+		require.NoError(t, err)
+		require.Equal(t, scan, readScan)
 	})
-	require.NoError(t, err)
-	require.Equal(t, scan, readScan)
+
+	t.Run("with a nil upload ID", func(t *testing.T) {
+		_, err := repo.CreateScan(t.Context(), uuid.Nil)
+		require.ErrorContains(t, err, "update id cannot be empty")
+	})
+
+	t.Run("when the DB fails", func(t *testing.T) {
+		uploadID := uuid.New()
+
+		// Simulate a DB failure by cancelling the context before the operation.
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+
+		_, err := repo.CreateScan(ctx, uploadID)
+		require.ErrorContains(t, err, "context canceled")
+	})
 }
