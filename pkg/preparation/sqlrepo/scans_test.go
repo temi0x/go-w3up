@@ -1,7 +1,6 @@
 package sqlrepo_test
 
 import (
-	"context"
 	"database/sql"
 	_ "embed"
 	"fmt"
@@ -49,36 +48,34 @@ var schema string
 
 // createTestDB creates a temporary SQLite database for testing. It returns the
 // database connection, a cleanup function, and any error encountered.
-func createTestDB(ctx context.Context) (*sql.DB, func(), error) {
+func createTestDB(t *testing.T) (*sql.DB, error) {
 	dir, err := os.MkdirTemp("", "sqlrepo_test")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	fn := filepath.Join(dir, "db")
 
 	db, err := sql.Open("sqlite", fn)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	cleanup := func() {
+	t.Cleanup(func() {
 		db.Close()
 		os.RemoveAll(dir)
+	})
+
+	if _, err = db.ExecContext(t.Context(), schema); err != nil {
+		return nil, err
 	}
 
-	if _, err = db.ExecContext(ctx, schema); err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-
-	return db, cleanup, nil
+	return db, nil
 }
 
 func TestCreateScan(t *testing.T) {
-	db, cleanup, err := createTestDB(t.Context())
+	db, err := createTestDB(t)
 	require.NoError(t, err)
-	defer cleanup()
 
 	// Disable foreign key checks to simplify test.
 	db.ExecContext(t.Context(), "PRAGMA foreign_keys = OFF;")
