@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 
 	"github.com/storacha/guppy/pkg/client/nodevalue"
