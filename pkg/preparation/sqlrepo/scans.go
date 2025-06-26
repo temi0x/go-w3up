@@ -14,7 +14,7 @@ import (
 
 var _ scans.Repo = (*repo)(nil)
 
-// CreateScan creates a new scan in the repository with the given source ID and upload ID.
+// CreateScan creates a new scan in the repository with the given upload ID.
 func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmodel.Scan, error) {
 
 	scan, err := scanmodel.NewScan(uploadID)
@@ -23,8 +23,8 @@ func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmo
 	}
 
 	insertQuery := `
-		INSERT INTO scans (id, source_id, upload_id, root_id, created_at, updated_at, state, error_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO scans (id, upload_id, root_id, created_at, updated_at, state, error_message)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
 	err = scanmodel.WriteScanToDatabase(scan, func(id types.ScanID, uploadID types.UploadID, rootID *types.FSEntryID, createdAt, updatedAt time.Time, state scanmodel.ScanState, errorMessage *string) error {
@@ -39,7 +39,6 @@ func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmo
 // If the file already exists, it returns the existing file and false.
 // If the file does not exist, it creates a new file entry and returns it along with true.
 func (r *repo) FindOrCreateFile(ctx context.Context, path string, lastModified time.Time, mode fs.FileMode, size uint64, checksum []byte, sourceID types.SourceID) (*scanmodel.File, bool, error) {
-
 	entry, err := r.findFSEntry(ctx, path, lastModified, mode, size, checksum, sourceID)
 	if err != nil {
 		return nil, false, err
@@ -143,7 +142,7 @@ func (r *repo) DirectoryChildren(ctx context.Context, dir *scanmodel.Directory) 
 func (r *repo) UpdateScan(ctx context.Context, scan *scanmodel.Scan) error {
 	query := `
 		UPDATE scans
-		SET source_id = $2, upload_id = $3, root_id = $4, created_at = $5, updated_at = $6, state = $7, error_message = $8
+		SET upload_id = $2, root_id = $3, created_at = $4, updated_at = $5, state = $6, error_message = $7
 		WHERE id = $1
 	`
 
