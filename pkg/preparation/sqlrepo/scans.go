@@ -64,6 +64,45 @@ func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmo
 	return scan, nil
 }
 
+func (r *repo) GetScanByID(ctx context.Context, scanID types.ScanID) (*scanmodel.Scan, error) {
+	row := r.db.QueryRowContext(ctx,
+		`SELECT
+			id,
+			upload_id,
+			root_id,
+			created_at,
+			updated_at,
+			state,
+			error_message
+		FROM scans WHERE id = ?`, scanID[:],
+	)
+	scan, err := scanmodel.ReadScanFromDatabase(func(
+		id *types.ScanID,
+		uploadID *types.UploadID,
+		rootID **types.FSEntryID,
+		createdAt *time.Time,
+		updatedAt *time.Time,
+		state *scanmodel.ScanState,
+		errorMessage **string) error {
+		return row.Scan(
+			id,
+			uploadID,
+			rootID,
+			timestampScanner(createdAt),
+			timestampScanner(updatedAt),
+			state,
+			errorMessage,
+		)
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return scan, nil
+}
+
 // FindOrCreateFile finds or creates a file entry in the repository with the given parameters.
 // If the file already exists, it returns the existing file and false.
 // If the file does not exist, it creates a new file entry and returns it along with true.
