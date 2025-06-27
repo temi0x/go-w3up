@@ -3,7 +3,7 @@ package client_test
 import (
 	"testing"
 
-	"github.com/storacha/go-libstoracha/capabilities/upload"
+	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
 	"github.com/storacha/go-ucanto/core/delegation"
 	uhelpers "github.com/storacha/go-ucanto/testing/helpers"
 	"github.com/storacha/guppy/pkg/agentdata"
@@ -22,11 +22,11 @@ func TestReset(t *testing.T) {
 	issuer := c.Issuer()
 
 	// Some arbitrary delegation
-	del := uhelpers.Must(upload.Get.Delegate(
+	del := uhelpers.Must(uploadcap.Get.Delegate(
 		c.Issuer(),
 		c.Issuer(),
 		c.Issuer().DID().String(),
-		upload.GetCaveats{Root: uhelpers.RandomCID()},
+		uploadcap.GetCaveats{Root: uhelpers.RandomCID()},
 	))
 
 	err := c.AddProofs(del)

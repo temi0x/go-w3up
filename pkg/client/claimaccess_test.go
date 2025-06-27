@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/storacha/go-libstoracha/capabilities/access"
-	"github.com/storacha/go-libstoracha/capabilities/upload"
+	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
 	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/core/invocation"
 	"github.com/storacha/go-ucanto/core/receipt/fx"
@@ -62,11 +62,11 @@ func TestClaimAccess(t *testing.T) {
 		c = uhelpers.Must(client.NewClient(connection))
 
 		// Some arbitrary delegation which has been stored to be claimed.
-		del := uhelpers.Must(upload.Get.Delegate(
+		del := uhelpers.Must(uploadcap.Get.Delegate(
 			c.Issuer(),
 			c.Issuer(),
 			c.Issuer().DID().String(),
-			upload.GetCaveats{Root: uhelpers.RandomCID()},
+			uploadcap.GetCaveats{Root: uhelpers.RandomCID()},
 		))
 		storedDels = buildDelegationsModel(del)
 

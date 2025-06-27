@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/storacha/go-libstoracha/capabilities/upload"
+	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
 	"github.com/storacha/go-ucanto/did"
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
 	"github.com/storacha/guppy/pkg/client"
@@ -30,7 +30,7 @@ func main() {
 	listOk, _ := c.UploadList(
 		context.Background(),
 		space,
-		upload.ListCaveats{},
+		uploadcap.ListCaveats{},
 		proof,
 	)
 
