@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io/fs"
 	"time"
 
@@ -43,7 +44,7 @@ func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmo
 			updatedAt time.Time,
 			state scanmodel.ScanState,
 			errorMessage *string) error {
-			_, err := r.db.ExecContext(
+			result, err := r.db.ExecContext(
 				ctx,
 				insertQuery,
 				id[:],
@@ -54,6 +55,16 @@ func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmo
 				state,
 				NullString(errorMessage),
 			)
+			if err != nil {
+				return fmt.Errorf("failed to insert scan: %w", err)
+			}
+			rowsAffected, err := result.RowsAffected()
+			if err != nil {
+				return fmt.Errorf("failed to get rows affected: %w", err)
+			}
+			if rowsAffected == 0 {
+				return fmt.Errorf("no scan inserted")
+			}
 			return err
 		},
 	)
