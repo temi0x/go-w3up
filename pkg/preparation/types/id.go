@@ -7,3 +7,9 @@ type SourceID = uuid.UUID
 
 // UploadID is an alias for uuid.UUID and uniquely identifies an upload.
 type UploadID = uuid.UUID
+
+// ScanID is an alias for uuid.UUID and uniquely identifies a scan.
+type ScanID = uuid.UUID
+
+// FSEntryID is an alias for uuid.UUID and uniquely identifies a filesystem entry.
+type FSEntryID = uuid.UUID

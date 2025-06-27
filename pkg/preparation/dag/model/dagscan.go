@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
-	scansmodel "github.com/storacha/guppy/pkg/preparation/scans/model"
 	"github.com/storacha/guppy/pkg/preparation/types"
 )
 
@@ -38,7 +37,7 @@ func validDAGScanState(state DAGScanState) bool {
 }
 
 type DAGScan interface {
-	FsEntryID() scansmodel.FSEntryID
+	FsEntryID() types.FSEntryID
 	UploadID() types.UploadID
 	CreatedAt() time.Time
 	UpdatedAt() time.Time
@@ -55,7 +54,7 @@ type DAGScan interface {
 }
 
 type dagScan struct {
-	fsEntryID    scansmodel.FSEntryID
+	fsEntryID    types.FSEntryID
 	uploadID     types.UploadID
 	createdAt    time.Time
 	updatedAt    time.Time
@@ -82,13 +81,12 @@ func validateDAGScan(d *dagScan) (*dagScan, error) {
 }
 
 // accessors
-func (d *dagScan) FsEntryID() scansmodel.FSEntryID {
+func (d *dagScan) FsEntryID() types.FSEntryID {
 	return d.fsEntryID
 }
 func (d *dagScan) UploadID() types.UploadID {
 	return d.uploadID
 }
-
 func (d *dagScan) CreatedAt() time.Time {
 	return d.createdAt
 }
@@ -187,7 +185,7 @@ func (d *DirectoryDAGScan) ChildrenCompleted() error {
 }
 
 // NewFileDAGScan creates a new FileDAGScan with the given fsEntryID.
-func NewFileDAGScan(fsEntryID scansmodel.FSEntryID) (*FileDAGScan, error) {
+func NewFileDAGScan(fsEntryID types.FSEntryID) (*FileDAGScan, error) {
 	fds := &FileDAGScan{
 		dagScan: dagScan{
 			fsEntryID: fsEntryID,
@@ -203,7 +201,7 @@ func NewFileDAGScan(fsEntryID scansmodel.FSEntryID) (*FileDAGScan, error) {
 }
 
 // NewDirectoryDAGScan creates a new DirectoryDAGScan with the given fsEntryID.
-func NewDirectoryDAGScan(fsEntryID scansmodel.FSEntryID) (*DirectoryDAGScan, error) {
+func NewDirectoryDAGScan(fsEntryID types.FSEntryID) (*DirectoryDAGScan, error) {
 	dds := &DirectoryDAGScan{
 		dagScan: dagScan{
 			fsEntryID: fsEntryID,
@@ -219,7 +217,7 @@ func NewDirectoryDAGScan(fsEntryID scansmodel.FSEntryID) (*DirectoryDAGScan, err
 }
 
 // DAGScanWriter is a function type for writing a DAGScan to the database.
-type DAGScanWriter func(kind string, fsEntryID scansmodel.FSEntryID, createdAt time.Time, updatedAt time.Time, errorMessage *string, state DAGScanState, cid *cid.Cid) error
+type DAGScanWriter func(kind string, fsEntryID types.FSEntryID, createdAt time.Time, updatedAt time.Time, errorMessage *string, state DAGScanState, cid *cid.Cid) error
 
 // WriteDAGScanToDatabase writes a DAGScan to the database using the provided writer function.
 func WriteDAGScanToDatabase(scan DAGScan, writer DAGScanWriter) error {
@@ -250,7 +248,7 @@ func WriteDAGScanToDatabase(scan DAGScan, writer DAGScanWriter) error {
 }
 
 // DAGScanScanner is a function type for scanning a DAGScan from the database.
-type DAGScanScanner func(kind *string, fsEntryID *scansmodel.FSEntryID, createdAt *time.Time, updatedAt *time.Time, errorMessage **string, state *DAGScanState, cid **cid.Cid) error
+type DAGScanScanner func(kind *string, fsEntryID *types.FSEntryID, createdAt *time.Time, updatedAt *time.Time, errorMessage **string, state *DAGScanState, cid **cid.Cid) error
 
 // ReadDAGScanFromDatabase reads a DAGScan from the database using the provided scanner function.
 func ReadDAGScanFromDatabase(scanner DAGScanScanner) (DAGScan, error) {

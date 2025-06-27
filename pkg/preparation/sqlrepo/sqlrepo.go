@@ -309,7 +309,7 @@ func (r *repo) CreateScan(ctx context.Context, sourceID types.SourceID, uploadID
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 
-	err = scanmodel.WriteScanToDatabase(scan, func(id scanmodel.ScanID, uploadID types.UploadID, sourceID types.SourceID, rootID *scanmodel.FSEntryID, createdAt, updatedAt time.Time, state scanmodel.ScanState, errorMessage *string) error {
+	err = scanmodel.WriteScanToDatabase(scan, func(id types.ScanID, uploadID types.UploadID, sourceID types.SourceID, rootID *types.FSEntryID, createdAt, updatedAt time.Time, state scanmodel.ScanState, errorMessage *string) error {
 		_, err := r.db.ExecContext(ctx, insertQuery, id, sourceID, uploadID, Null(rootID), createdAt, updatedAt, state, NullString(errorMessage))
 		return err
 	})
@@ -325,7 +325,7 @@ func (r *repo) UpdateScan(ctx context.Context, scan *scanmodel.Scan) error {
 		WHERE id = $1
 	`
 
-	return scanmodel.WriteScanToDatabase(scan, func(id scanmodel.ScanID, uploadID types.UploadID, sourceID types.SourceID, rootID *scanmodel.FSEntryID, createdAt, updatedAt time.Time, state scanmodel.ScanState, errorMessage *string) error {
+	return scanmodel.WriteScanToDatabase(scan, func(id types.ScanID, uploadID types.UploadID, sourceID types.SourceID, rootID *types.FSEntryID, createdAt, updatedAt time.Time, state scanmodel.ScanState, errorMessage *string) error {
 		_, err := r.db.ExecContext(ctx, query, id, sourceID, uploadID, Null(rootID), createdAt, updatedAt, state, NullString(errorMessage))
 		return err
 	})
@@ -398,7 +398,7 @@ func (r *repo) findFSEntry(ctx context.Context, path string, lastModified time.T
 		WHERE path = $1 AND last_modified = $2 AND mode = $3 AND size = $4 AND checksum = $5 AND source_id = $6
 	`
 	row := r.db.QueryRowContext(ctx, query, path, lastModified, mode, size, checksum, sourceID)
-	entry, err := scanmodel.ReadFSEntryFromDatabase(func(id *scanmodel.FSEntryID, path *string, lastModified *time.Time, mode *fs.FileMode, size *uint64, checksum *[]byte, sourceID *types.SourceID) error {
+	entry, err := scanmodel.ReadFSEntryFromDatabase(func(id *types.FSEntryID, path *string, lastModified *time.Time, mode *fs.FileMode, size *uint64, checksum *[]byte, sourceID *types.SourceID) error {
 		return row.Scan(id, path, lastModified, mode, size, checksum, sourceID)
 	})
 	if errors.Is(err, sql.ErrNoRows) {
@@ -413,7 +413,7 @@ func (r *repo) createFSEntry(ctx context.Context, entry scanmodel.FSEntry) error
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
-	return scanmodel.WriteFSEntryToDatabase(entry, func(id scanmodel.FSEntryID, path string, lastModified time.Time, mode fs.FileMode, size uint64, checksum []byte, sourceID types.SourceID) error {
+	return scanmodel.WriteFSEntryToDatabase(entry, func(id types.FSEntryID, path string, lastModified time.Time, mode fs.FileMode, size uint64, checksum []byte, sourceID types.SourceID) error {
 		_, err := r.db.ExecContext(ctx, insertQuery, id, path, lastModified, mode, size, checksum, sourceID)
 		return err
 	})
@@ -452,7 +452,7 @@ func (r *repo) DirectoryChildren(ctx context.Context, dir *scanmodel.Directory) 
 
 	var entries []scanmodel.FSEntry
 	for rows.Next() {
-		entry, err := scanmodel.ReadFSEntryFromDatabase(func(id *scanmodel.FSEntryID, path *string, lastModified *time.Time, mode *fs.FileMode, size *uint64, checksum *[]byte, sourceID *types.SourceID) error {
+		entry, err := scanmodel.ReadFSEntryFromDatabase(func(id *types.FSEntryID, path *string, lastModified *time.Time, mode *fs.FileMode, size *uint64, checksum *[]byte, sourceID *types.SourceID) error {
 			return rows.Scan(id, path, lastModified, mode, size, checksum, sourceID)
 		})
 		if err != nil {
@@ -464,11 +464,11 @@ func (r *repo) DirectoryChildren(ctx context.Context, dir *scanmodel.Directory) 
 }
 
 // GetFileByID retrieves a file by its unique ID from the repository.
-func (r *repo) GetFileByID(ctx context.Context, fileID scanmodel.FSEntryID) (*scanmodel.File, error) {
+func (r *repo) GetFileByID(ctx context.Context, fileID types.FSEntryID) (*scanmodel.File, error) {
 	row := r.db.QueryRowContext(ctx,
 		`SELECT id, path, last_modified, mode, size, checksum, source_id FROM files WHERE id = ?`, fileID,
 	)
-	file, err := scanmodel.ReadFSEntryFromDatabase(func(id *scanmodel.FSEntryID, path *string, lastModified *time.Time, mode *fs.FileMode, size *uint64, checksum *[]byte, sourceID *types.SourceID) error {
+	file, err := scanmodel.ReadFSEntryFromDatabase(func(id *types.FSEntryID, path *string, lastModified *time.Time, mode *fs.FileMode, size *uint64, checksum *[]byte, sourceID *types.SourceID) error {
 		return row.Scan(id, path, lastModified, mode, size, checksum, sourceID)
 	})
 	if errors.Is(err, sql.ErrNoRows) {

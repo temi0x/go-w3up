@@ -9,10 +9,8 @@ import (
 	"github.com/storacha/guppy/pkg/preparation/types"
 )
 
-type FSEntryID = uuid.UUID
-
 type FSEntry interface {
-	ID() FSEntryID
+	ID() types.FSEntryID
 	// Path is the path within the datasource
 	Path() string
 	LastModified() time.Time
@@ -26,7 +24,7 @@ type FSEntry interface {
 }
 
 type fsEntry struct {
-	id           FSEntryID
+	id           types.FSEntryID
 	path         string
 	lastModified time.Time
 	mode         fs.FileMode
@@ -34,7 +32,7 @@ type fsEntry struct {
 	sourceID     types.SourceID // sourceID is the ID of the source this entry belongs to
 }
 
-func (f *fsEntry) ID() FSEntryID {
+func (f *fsEntry) ID() types.FSEntryID {
 	return f.id
 }
 
@@ -127,7 +125,7 @@ func NewDirectory(path string, lastModified time.Time, mode fs.FileMode, checksu
 	return directory, nil
 }
 
-type FSEntryWriter func(id FSEntryID, path string, lastModified time.Time, mode fs.FileMode, size uint64, checksum []byte, sourceID types.SourceID) error
+type FSEntryWriter func(id types.FSEntryID, path string, lastModified time.Time, mode fs.FileMode, size uint64, checksum []byte, sourceID types.SourceID) error
 
 func WriteFSEntryToDatabase(entry FSEntry, writer FSEntryWriter) error {
 	size := uint64(0)
@@ -137,7 +135,7 @@ func WriteFSEntryToDatabase(entry FSEntry, writer FSEntryWriter) error {
 	return writer(entry.ID(), entry.Path(), entry.LastModified(), entry.Mode(), size, entry.Checksum(), entry.SourceID())
 }
 
-type FSEntryScanner func(id *FSEntryID, path *string, lastModified *time.Time, mode *fs.FileMode, size *uint64, checksum *[]byte, sourceID *types.SourceID) error
+type FSEntryScanner func(id *types.FSEntryID, path *string, lastModified *time.Time, mode *fs.FileMode, size *uint64, checksum *[]byte, sourceID *types.SourceID) error
 
 func ReadFSEntryFromDatabase(scanner FSEntryScanner) (FSEntry, error) {
 	fsEntry := &fsEntry{}

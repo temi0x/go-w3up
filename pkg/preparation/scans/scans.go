@@ -90,7 +90,7 @@ func (s Scans) OpenFile(ctx context.Context, file *model.File) (fs.File, error) 
 }
 
 // GetFileByID retrieves a file by its ID from the repository, returning an error if not found.
-func (s Scans) GetFileByID(ctx context.Context, fileID model.FSEntryID) (*model.File, error) {
+func (s Scans) GetFileByID(ctx context.Context, fileID types.FSEntryID) (*model.File, error) {
 	file, err := s.Repo.GetFileByID(ctx, fileID)
 	if err != nil {
 		return nil, fmt.Errorf("getting file by ID %s: %w", fileID, err)
@@ -102,7 +102,7 @@ func (s Scans) GetFileByID(ctx context.Context, fileID model.FSEntryID) (*model.
 }
 
 // OpenFileByID retrieves a file by its ID and opens it for reading, returning an error if not found or if the file cannot be opened.
-func (s Scans) OpenFileByID(ctx context.Context, fileID model.FSEntryID) (fs.File, error) {
+func (s Scans) OpenFileByID(ctx context.Context, fileID types.FSEntryID) (fs.File, error) {
 	file, err := s.GetFileByID(ctx, fileID)
 	if err != nil {
 		return nil, err
