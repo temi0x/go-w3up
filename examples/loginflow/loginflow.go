@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
 	"github.com/storacha/go-ucanto/core/result"
 	"github.com/storacha/go-ucanto/did"
-	"github.com/storacha/guppy/pkg/capability/uploadlist"
 	"github.com/storacha/guppy/pkg/client"
 )
 
@@ -37,17 +37,15 @@ func main() {
 	// Either add the proofs to the client to use them on any invocation...
 	c.AddProofs(proofs...)
 
-	rcpt, _ := c.UploadList(
+	listOk, _ := c.UploadList(
 		context.Background(),
 		space,
-		uploadlist.Caveat{},
+		uploadcap.ListCaveats{},
 		// ...Or use them for a single invocation
 		proofs...,
 	)
 
-	ok, _ := result.Unwrap(rcpt.Out())
-
-	for _, r := range ok.Results {
+	for _, r := range listOk.Results {
 		fmt.Printf("%s\n", r.Root)
 	}
 }

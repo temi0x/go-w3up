@@ -9,7 +9,7 @@ import (
 	"github.com/ipld/go-ipld-prime/datamodel"
 	basicnode "github.com/ipld/go-ipld-prime/node/basic"
 	"github.com/storacha/go-libstoracha/capabilities/access"
-	"github.com/storacha/go-libstoracha/capabilities/upload"
+	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
 	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/core/invocation"
 	"github.com/storacha/go-ucanto/core/ipld"
@@ -82,17 +82,17 @@ func TestPollClaim(t *testing.T) {
 
 	requestLink := uhelpers.RandomCID()
 
-	unrelatedDel := uhelpers.Must(upload.Get.Delegate(
+	unrelatedDel := uhelpers.Must(uploadcap.Get.Delegate(
 		c.Issuer(),
 		c.Issuer(),
 		c.Issuer().DID().String(),
-		upload.GetCaveats{Root: uhelpers.RandomCID()},
+		uploadcap.GetCaveats{Root: uhelpers.RandomCID()},
 	))
-	relatedDel := uhelpers.Must(upload.Get.Delegate(
+	relatedDel := uhelpers.Must(uploadcap.Get.Delegate(
 		c.Issuer(),
 		c.Issuer(),
 		c.Issuer().DID().String(),
-		upload.GetCaveats{Root: uhelpers.RandomCID()},
+		uploadcap.GetCaveats{Root: uhelpers.RandomCID()},
 		delegation.WithFacts([]ucan.FactBuilder{factBuilder{
 			"access/request": linkBuilder{link: requestLink},
 		}}),
