@@ -1,6 +1,7 @@
 package file
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -103,7 +104,7 @@ func fileTreeRecursive(
 		offset := c.Offset()
 		leafCid, leaf, err := c.NextBytes()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return fileShardMeta{}, nil
 			}
 			return fileShardMeta{}, err
