@@ -198,7 +198,6 @@ func reset(cCtx *cli.Context) error {
 }
 
 func ls(cCtx *cli.Context) error {
-	c := util.MustGetClient()
 	space := util.MustParseDID(cCtx.String("space"))
 
 	proofs := []delegation.Delegation{}
@@ -207,12 +206,12 @@ func ls(cCtx *cli.Context) error {
 		proofs = append(proofs, proof)
 	}
 
+	c := util.MustGetClient(proofs...)
+
 	listOk, err := c.UploadList(
 		cCtx.Context,
 		space,
-		uploadcap.ListCaveats{},
-		proofs...,
-	)
+		uploadcap.ListCaveats{})
 	if err != nil {
 		return err
 	}

@@ -47,7 +47,7 @@ import (
 	"github.com/storacha/guppy/pkg/client"
 )
 
-func TestBlobAdd(t *testing.T) {
+func TestSpaceBlobAdd(t *testing.T) {
 	space, err := ed25519signer.Generate()
 	if err != nil {
 		t.Fatal(err)
@@ -88,9 +88,11 @@ func TestBlobAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	c.AddProofs(proof)
+
 	testBlob := bytes.NewReader([]byte("test"))
 
-	_, _, err = c.SpaceBlobAdd(testContext(t), testBlob, space.DID(), receiptsURL, proof)
+	_, _, err = c.SpaceBlobAdd(testContext(t), testBlob, space.DID(), receiptsURL)
 	require.NoError(t, err)
 }
 

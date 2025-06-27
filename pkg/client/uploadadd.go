@@ -6,7 +6,6 @@ import (
 
 	"github.com/ipld/go-ipld-prime"
 	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
-	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/core/result"
 	"github.com/storacha/go-ucanto/did"
 )
@@ -23,12 +22,7 @@ import (
 // They won't be saved in the client, only used for this invocation.
 //
 // The `caveats` are caveats required to perform an `upload/add` invocation.
-func (c *Client) UploadAdd(ctx context.Context, space did.DID, root ipld.Link, shards []ipld.Link, proofs ...delegation.Delegation) (uploadcap.AddOk, error) {
-	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
-	for _, del := range append(c.Proofs(), proofs...) {
-		pfs = append(pfs, delegation.FromDelegation(del))
-	}
-
+func (c *Client) UploadAdd(ctx context.Context, space did.DID, root ipld.Link, shards []ipld.Link) (uploadcap.AddOk, error) {
 	res, _, err := invokeAndExecute[uploadcap.AddCaveats, uploadcap.AddOk](
 		ctx,
 		c,
@@ -39,7 +33,6 @@ func (c *Client) UploadAdd(ctx context.Context, space did.DID, root ipld.Link, s
 			Shards: shards,
 		},
 		uploadcap.AddOkType(),
-		delegation.WithProof(pfs...),
 	)
 
 	if err != nil {

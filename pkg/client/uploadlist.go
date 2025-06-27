@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
-	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/core/result"
 	"github.com/storacha/go-ucanto/did"
 )
@@ -21,12 +20,7 @@ import (
 //
 // The `proofs` are delegation proofs to use in addition to those in the client.
 // They won't be saved in the client, only used for this invocation.
-func (c *Client) UploadList(ctx context.Context, space did.DID, params uploadcap.ListCaveats, proofs ...delegation.Delegation) (uploadcap.ListOk, error) {
-	pfs := make([]delegation.Proof, 0, len(c.Proofs()))
-	for _, del := range append(c.Proofs(), proofs...) {
-		pfs = append(pfs, delegation.FromDelegation(del))
-	}
-
+func (c *Client) UploadList(ctx context.Context, space did.DID, params uploadcap.ListCaveats) (uploadcap.ListOk, error) {
 	res, _, err := invokeAndExecute[uploadcap.ListCaveats, uploadcap.ListOk](
 		ctx,
 		c,
@@ -34,7 +28,6 @@ func (c *Client) UploadList(ctx context.Context, space did.DID, params uploadcap
 		space.String(),
 		params,
 		uploadcap.ListOkType(),
-		delegation.WithProof(pfs...),
 	)
 
 	if err != nil {
@@ -47,5 +40,4 @@ func (c *Client) UploadList(ctx context.Context, space did.DID, params uploadcap
 	}
 
 	return addOk, nil
-
 }

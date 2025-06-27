@@ -34,15 +34,13 @@ func main() {
 	// Wait for the user to authenticate
 	proofs, _ := result.Unwrap(<-resultChan)
 
-	// Either add the proofs to the client to use them on any invocation...
+	// Add the proofs to the client
 	c.AddProofs(proofs...)
 
 	listOk, _ := c.UploadList(
 		context.Background(),
 		space,
 		uploadcap.ListCaveats{},
-		// ...Or use them for a single invocation
-		proofs...,
 	)
 
 	for _, r := range listOk.Results {
