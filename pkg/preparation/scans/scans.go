@@ -16,9 +16,10 @@ import (
 
 // Scans is a dependency container for executing scans on a repository.
 type Scans struct {
-	Repo           Repo
-	SourceAccessor SourceAccessorFn
-	WalkerFn       WalkerFn
+	Repo               Repo
+	UploadSourceLookup UploadSourceLookupFn
+	SourceAccessor     SourceAccessorFn
+	WalkerFn           WalkerFn
 }
 
 // WalkerFn is a function type that defines how to walk the file system.
@@ -26,6 +27,9 @@ type WalkerFn func(fsys fs.FS, root string, visitor walker.FSVisitor) (model.FSE
 
 // SourceAccessorFn is a function type that retrieves the file system for a given source ID.
 type SourceAccessorFn func(ctx context.Context, sourceID types.SourceID) (fs.FS, error)
+
+// UploadSourceLookupFn is a function type that retrieves the source ID for a given upload ID.
+type UploadSourceLookupFn func(ctx context.Context, uploadID types.UploadID) (types.SourceID, error)
 
 // ExecuteScan executes a scan on the given source, creating files and directories in the repository.
 func (s Scans) ExecuteScan(ctx context.Context, scan *model.Scan, fsEntryCb func(model.FSEntry) error) error {
@@ -59,11 +63,15 @@ func (s Scans) ExecuteScan(ctx context.Context, scan *model.Scan, fsEntryCb func
 }
 
 func (s Scans) executeScan(ctx context.Context, scan *model.Scan, fsEntryCb func(model.FSEntry) error) (model.FSEntry, error) {
-	fsys, err := s.SourceAccessor(ctx, scan.SourceID())
+	sourceID, err := s.UploadSourceLookup(ctx, scan.UploadID())
+	if err != nil {
+		return nil, fmt.Errorf("looking up source ID: %w", err)
+	}
+	fsys, err := s.SourceAccessor(ctx, sourceID)
 	if err != nil {
 		return nil, fmt.Errorf("accessing source: %w", err)
 	}
-	fsEntry, err := s.WalkerFn(fsys, "/", visitor.NewScanVisitor(ctx, s.Repo, scan.SourceID(), fsEntryCb))
+	fsEntry, err := s.WalkerFn(fsys, "/", visitor.NewScanVisitor(ctx, s.Repo, sourceID, fsEntryCb))
 	if err != nil {
 		return nil, fmt.Errorf("recursively creating directories: %w", err)
 	}
@@ -102,10 +110,14 @@ func (s Scans) GetFileByID(ctx context.Context, fileID types.FSEntryID) (*model.
 }
 
 // OpenFileByID retrieves a file by its ID and opens it for reading, returning an error if not found or if the file cannot be opened.
-func (s Scans) OpenFileByID(ctx context.Context, fileID types.FSEntryID) (fs.File, error) {
+func (s Scans) OpenFileByID(ctx context.Context, fileID types.FSEntryID) (fs.File, types.SourceID, string, error) {
 	file, err := s.GetFileByID(ctx, fileID)
 	if err != nil {
-		return nil, err
+		return nil, types.SourceID{}, "", err
 	}
-	return s.OpenFile(ctx, file)
+	fsFile, err := s.OpenFile(ctx, file)
+	if err != nil {
+		return nil, types.SourceID{}, "", err
+	}
+	return fsFile, file.SourceID(), file.Path(), nil
 }

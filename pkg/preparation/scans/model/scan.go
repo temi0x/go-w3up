@@ -37,7 +37,6 @@ func validScanState(state ScanState) bool {
 type Scan struct {
 	id           types.ScanID
 	uploadID     types.UploadID
-	sourceID     types.SourceID
 	rootID       *types.FSEntryID // rootID is the ID of the root directory of the scan, if it has been completed
 	createdAt    time.Time
 	updatedAt    time.Time
@@ -52,9 +51,6 @@ func validateScan(s *Scan) (*Scan, error) {
 	}
 	if s.uploadID == uuid.Nil {
 		return nil, types.ErrEmpty{"update id"}
-	}
-	if s.sourceID == uuid.Nil {
-		return nil, types.ErrEmpty{"source id"}
 	}
 	if !validScanState(s.state) {
 		return nil, fmt.Errorf("invalid scan state: %s", s.state)
@@ -72,10 +68,6 @@ func validateScan(s *Scan) (*Scan, error) {
 
 func (s *Scan) ID() types.ScanID {
 	return s.id
-}
-
-func (s *Scan) SourceID() types.SourceID {
-	return s.sourceID
 }
 
 func (s *Scan) UploadID() types.UploadID {
@@ -152,11 +144,10 @@ func (s *Scan) Start() error {
 	return nil
 }
 
-func NewScan(uploadID types.UploadID, sourceID types.SourceID) (*Scan, error) {
+func NewScan(uploadID types.UploadID) (*Scan, error) {
 	scan := &Scan{
 		id:        uuid.New(),
 		uploadID:  uploadID,
-		sourceID:  sourceID,
 		state:     ScanStatePending,
 		createdAt: time.Now(),
 		updatedAt: time.Now(),
@@ -164,19 +155,19 @@ func NewScan(uploadID types.UploadID, sourceID types.SourceID) (*Scan, error) {
 	return validateScan(scan)
 }
 
-type ScanScanner func(id *types.ScanID, uploadID *types.UploadID, sourceID *types.SourceID, rootID **types.FSEntryID, createdAt *time.Time, updatedAt *time.Time, state *ScanState, errorMessage **string) error
+type ScanScanner func(id *types.ScanID, uploadID *types.UploadID, rootID **types.FSEntryID, createdAt *time.Time, updatedAt *time.Time, state *ScanState, errorMessage **string) error
 
 func ReadScanFromDatabase(scanner ScanScanner) (*Scan, error) {
 	scan := &Scan{}
-	err := scanner(&scan.id, &scan.uploadID, &scan.sourceID, &scan.rootID, &scan.createdAt, &scan.updatedAt, &scan.state, &scan.errorMessage)
+	err := scanner(&scan.id, &scan.uploadID, &scan.rootID, &scan.createdAt, &scan.updatedAt, &scan.state, &scan.errorMessage)
 	if err != nil {
 		return nil, fmt.Errorf("reading scan from database: %w", err)
 	}
 	return validateScan(scan)
 }
 
-type ScanWriter func(id types.ScanID, uploadID types.UploadID, sourceID types.SourceID, rootID *types.FSEntryID, createdAt time.Time, updatedAt time.Time, state ScanState, errorMessage *string) error
+type ScanWriter func(id types.ScanID, uploadID types.UploadID, rootID *types.FSEntryID, createdAt time.Time, updatedAt time.Time, state ScanState, errorMessage *string) error
 
 func WriteScanToDatabase(scan *Scan, writer ScanWriter) error {
-	return writer(scan.id, scan.uploadID, scan.sourceID, scan.rootID, scan.createdAt, scan.updatedAt, scan.state, scan.errorMessage)
+	return writer(scan.id, scan.uploadID, scan.rootID, scan.createdAt, scan.updatedAt, scan.state, scan.errorMessage)
 }
