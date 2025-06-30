@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io/fs"
 	"time"
 
@@ -16,7 +17,6 @@ var _ scans.Repo = (*repo)(nil)
 
 // CreateScan creates a new scan in the repository with the given upload ID.
 func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmodel.Scan, error) {
-
 	scan, err := scanmodel.NewScan(uploadID)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmo
 			updatedAt time.Time,
 			state scanmodel.ScanState,
 			errorMessage *string) error {
-			_, err := r.db.ExecContext(
+			result, err := r.db.ExecContext(
 				ctx,
 				insertQuery,
 				id[:],
@@ -55,6 +55,16 @@ func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmo
 				state,
 				NullString(errorMessage),
 			)
+			if err != nil {
+				return fmt.Errorf("failed to insert scan: %w", err)
+			}
+			rowsAffected, err := result.RowsAffected()
+			if err != nil {
+				return fmt.Errorf("failed to get rows affected: %w", err)
+			}
+			if rowsAffected == 0 {
+				return fmt.Errorf("no scan inserted")
+			}
 			return err
 		},
 	)
@@ -62,6 +72,45 @@ func (r *repo) CreateScan(ctx context.Context, uploadID types.UploadID) (*scanmo
 		return nil, err
 	}
 
+	return scan, nil
+}
+
+func (r *repo) GetScanByID(ctx context.Context, scanID types.ScanID) (*scanmodel.Scan, error) {
+	row := r.db.QueryRowContext(ctx,
+		`SELECT
+			id,
+			upload_id,
+			root_id,
+			created_at,
+			updated_at,
+			state,
+			error_message
+		FROM scans WHERE id = ?`, scanID[:],
+	)
+	scan, err := scanmodel.ReadScanFromDatabase(func(
+		id *types.ScanID,
+		uploadID *types.UploadID,
+		rootID **types.FSEntryID,
+		createdAt *time.Time,
+		updatedAt *time.Time,
+		state *scanmodel.ScanState,
+		errorMessage **string) error {
+		return row.Scan(
+			id,
+			uploadID,
+			rootID,
+			timestampScanner(createdAt),
+			timestampScanner(updatedAt),
+			state,
+			errorMessage,
+		)
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
 	return scan, nil
 }
 
