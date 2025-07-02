@@ -2,43 +2,18 @@ package sqlrepo_test
 
 import (
 	"context"
-	"database/sql"
-	_ "embed"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/storacha/guppy/pkg/preparation/sqlrepo"
+	"github.com/storacha/guppy/pkg/preparation/testutil"
 	"github.com/stretchr/testify/require"
-	_ "modernc.org/sqlite"
 )
-
-//go:embed schema.sql
-var schema string
-
-// createTestDB creates a temporary SQLite database for testing. It returns the
-// database connection, a cleanup function, and any error encountered.
-func createTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite", ":memory:")
-	require.NoError(t, err, "failed to open in-memory SQLite database")
-
-	t.Cleanup(func() {
-		db.Close()
-	})
-
-	_, err = db.ExecContext(t.Context(), schema)
-	require.NoError(t, err, "failed to execute schema")
-
-	// Disable foreign key checks to simplify test.
-	_, err = db.ExecContext(t.Context(), "PRAGMA foreign_keys = OFF;")
-	require.NoError(t, err, "failed to disable foreign keys")
-
-	return db
-}
 
 func TestCreateScan(t *testing.T) {
 	t.Run("with an upload ID", func(t *testing.T) {
-		db := createTestDB(t)
-		repo := sqlrepo.New(db)
+		repo := sqlrepo.New(testutil.CreateTestDB(t))
 		uploadID := uuid.New()
 
 		scan, err := repo.CreateScan(t.Context(), uploadID)
@@ -51,20 +26,41 @@ func TestCreateScan(t *testing.T) {
 	})
 
 	t.Run("with a nil upload ID", func(t *testing.T) {
-		repo := sqlrepo.New(createTestDB(t))
+		repo := sqlrepo.New(testutil.CreateTestDB(t))
 		_, err := repo.CreateScan(t.Context(), uuid.Nil)
 		require.ErrorContains(t, err, "update id cannot be empty")
 	})
 
 	t.Run("when the DB fails", func(t *testing.T) {
-		repo := sqlrepo.New(createTestDB(t))
+		repo := sqlrepo.New(testutil.CreateTestDB(t))
 		uploadID := uuid.New()
 
-		// Simulate a DB failure by cancelling the context before the operation.
+		// Simulate a DB failure by canceling the context before the operation.
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
 		_, err := repo.CreateScan(ctx, uploadID)
 		require.ErrorContains(t, err, "context canceled")
 	})
+}
+
+func TestFindOrCreateFile(t *testing.T) {
+	repo := sqlrepo.New(testutil.CreateTestDB(t))
+	modTime := time.Now().UTC().Truncate(time.Second)
+	sourceId := uuid.New()
+
+	file, created, err := repo.FindOrCreateFile(t.Context(), "some/file.txt", modTime, 0644, 12345, []byte("checksum"), sourceId)
+	require.NoError(t, err)
+	require.True(t, created)
+	require.NotNil(t, file)
+
+	file2, created2, err := repo.FindOrCreateFile(t.Context(), "some/file.txt", modTime, 0644, 12345, []byte("checksum"), sourceId)
+	require.NoError(t, err)
+	require.False(t, created2)
+	require.Equal(t, file, file2)
+
+	file3, created3, err := repo.FindOrCreateFile(t.Context(), "some/file.txt", modTime, 0644, 12345, []byte("different-checksum"), sourceId)
+	require.NoError(t, err)
+	require.True(t, created3)
+	require.NotEqual(t, file.ID(), file3.ID())
 }
