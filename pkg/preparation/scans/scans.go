@@ -44,7 +44,7 @@ func (s Scans) ExecuteScan(ctx context.Context, scan *model.Scan, fsEntryCb func
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			if err := scan.Cancel(); err != nil {
-				return fmt.Errorf("cancelling scan: %w", err)
+				return fmt.Errorf("canceling scan: %w", err)
 			}
 		} else {
 			if err := scan.Fail(err.Error()); err != nil {
@@ -71,7 +71,7 @@ func (s Scans) executeScan(ctx context.Context, scan *model.Scan, fsEntryCb func
 	if err != nil {
 		return nil, fmt.Errorf("accessing source: %w", err)
 	}
-	fsEntry, err := s.WalkerFn(fsys, "/", visitor.NewScanVisitor(ctx, s.Repo, sourceID, fsEntryCb))
+	fsEntry, err := s.WalkerFn(fsys, ".", visitor.NewScanVisitor(ctx, s.Repo, sourceID, fsEntryCb))
 	if err != nil {
 		return nil, fmt.Errorf("recursively creating directories: %w", err)
 	}
