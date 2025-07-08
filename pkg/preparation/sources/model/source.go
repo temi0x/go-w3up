@@ -85,8 +85,8 @@ func NewSource(name string, path string, opts ...SourceOption) (*Source, error) 
 	src := &Source{
 		id:        uuid.New(),
 		name:      name,
-		createdAt: time.Now(),
-		updatedAt: time.Now(),
+		createdAt: time.Now().UTC().Truncate(time.Second),
+		updatedAt: time.Now().UTC().Truncate(time.Second),
 		path:      path,
 		kind:      LocalSourceKind,
 	}
@@ -99,14 +99,16 @@ func NewSource(name string, path string, opts ...SourceOption) (*Source, error) 
 }
 
 // SourceRowScanner is a function type for scanning a source row from the database.
-type SourceRowScanner func(id *types.SourceID, name *string, createdAt *time.Time, updatedAt *time.Time, kind *SourceKind, path *string, connectionParams *ConnectionParams) error
+type SourceRowScanner func(id *types.SourceID, name *string, createdAt *time.Time, updatedAt *time.Time, kind *SourceKind, path *string, connectionParamsBytes *[]byte) error
 
 // ReadSourceFromDatabase reads a Source from the database using the provided scanner function.
 func ReadSourceFromDatabase(scanner SourceRowScanner) (*Source, error) {
 	src := &Source{}
-	err := scanner(&src.id, &src.name, &src.createdAt, &src.updatedAt, &src.kind, &src.path, &src.connectionParams)
+	var connectionParamsBytes []byte
+	err := scanner(&src.id, &src.name, &src.createdAt, &src.updatedAt, &src.kind, &src.path, &connectionParamsBytes)
 	if err != nil {
 		return nil, fmt.Errorf("reading source from database: %w", err)
 	}
+	src.connectionParams = connectionParamsBytes
 	return validateSource(src)
 }
