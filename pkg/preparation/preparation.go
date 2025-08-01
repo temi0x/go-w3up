@@ -118,9 +118,9 @@ func NewAPI(repo Repo, options ...Option) API {
 
 			return scan.RootID(), nil
 		},
-		UploadDAGScanWorker:   dagsAPI.UploadDAGScanWorker,
-		AddNodeToUploadShards: shardsAPI.AddNodeToUploadShards,
-		UploadShardWorker:     shardsAPI.UploadShardWorker,
+		RestartDagScansForUpload: dagsAPI.RestartDagScansForUpload,
+		RunDagScansForUpload:     dagsAPI.RunDagScansForUpload,
+		AddNodeToUploadShards:    shardsAPI.AddNodeToUploadShards,
 	}
 
 	return API{
@@ -151,6 +151,6 @@ func (a API) CreateUploads(ctx context.Context, configurationID id.Configuration
 	return a.Uploads.CreateUploads(ctx, configurationID)
 }
 
-func (a API) ExecuteUpload(ctx context.Context, upload *uploadsmodel.Upload, opts ...uploads.ExecutionOption) error {
-	return a.Uploads.ExecuteUpload(ctx, upload, opts...)
+func (a API) ExecuteUpload(ctx context.Context, upload *uploadsmodel.Upload) error {
+	return a.Uploads.ExecuteUpload(ctx, upload)
 }
