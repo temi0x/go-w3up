@@ -1,7 +1,8 @@
-package sqlrepo
+package util
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"time"
 
@@ -30,20 +31,32 @@ func (ts tsScanner) Scan(value any) error {
 
 // timestampScanner returns a sql.Scanner that scans a timestamp (as an integer
 // of Unix time in seconds) into the given time.Time pointer.
-func timestampScanner(t *time.Time) tsScanner {
+func TimestampScanner(t *time.Time) tsScanner {
 	return tsScanner{dst: t}
 }
 
-// cidScanner returns a sql.Scanner that scans a CID from a byte slice into the
-type cidScanner struct {
-	dst *cid.Cid
+func DbCid(cid *cid.Cid) dbCid {
+	return dbCid{cid: cid}
 }
 
-var _ sql.Scanner = cidScanner{}
+// dbCid returns a sql.Scanner that scans a CID from a byte slice into the
+type dbCid struct {
+	cid *cid.Cid
+}
 
-func (cs cidScanner) Scan(value any) error {
+var _ driver.Valuer = dbCid{}
+var _ sql.Scanner = dbCid{}
+
+func (dc dbCid) Value() (driver.Value, error) {
+	if dc.cid == nil || dc.cid.Equals(cid.Undef) {
+		return nil, nil // Return nil for undefined CID
+	}
+	return dc.cid.Bytes(), nil
+}
+
+func (dc dbCid) Scan(value any) error {
 	if value == nil {
-		*cs.dst = cid.Undef
+		*dc.cid = cid.Undef
 		return nil
 	}
 	switch v := value.(type) {
@@ -52,7 +65,7 @@ func (cs cidScanner) Scan(value any) error {
 		if err != nil {
 			return fmt.Errorf("failed to cast to cid: %w", err)
 		}
-		*cs.dst = c
+		*dc.cid = c
 	default:
 		return fmt.Errorf("unsupported type for cid scanning: %T (%v)", v, v)
 	}

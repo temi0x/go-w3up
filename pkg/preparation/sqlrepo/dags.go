@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"time"
 
 	"github.com/ipfs/go-cid"
 	"github.com/storacha/guppy/pkg/preparation/dags"
 	"github.com/storacha/guppy/pkg/preparation/dags/model"
+	"github.com/storacha/guppy/pkg/preparation/sqlrepo/util"
 	"github.com/storacha/guppy/pkg/preparation/types/id"
 )
 
@@ -54,22 +56,16 @@ type sqlScanner interface {
 }
 
 func (r *repo) dagScanScanner(sqlScanner sqlScanner) model.DAGScanScanner {
-	return func(kind *string, fsEntryID *id.FSEntryID, uploadID *id.UploadID, createdAt *time.Time, updatedAt *time.Time, errorMessage **string, state *model.DAGScanState, cidPointer **cid.Cid) error {
+	return func(kind *string, fsEntryID *id.FSEntryID, uploadID *id.UploadID, createdAt *time.Time, updatedAt *time.Time, errorMessage **string, state *model.DAGScanState, cid *cid.Cid) error {
 		var nullErrorMessage sql.NullString
-		var cidTarget cid.Cid
-		err := sqlScanner.Scan(fsEntryID, uploadID, createdAt, updatedAt, &nullErrorMessage, state, cidScanner{dst: &cidTarget}, kind)
+		err := sqlScanner.Scan(fsEntryID, uploadID, util.TimestampScanner(createdAt), util.TimestampScanner(updatedAt), state, &nullErrorMessage, util.DbCid(cid), kind)
 		if err != nil {
-			return err
+			return fmt.Errorf("scanning dag scan: %w", err)
 		}
 		if nullErrorMessage.Valid {
 			*errorMessage = &nullErrorMessage.String
 		} else {
 			*errorMessage = nil
-		}
-		if cidTarget != cid.Undef {
-			*cidPointer = &cidTarget
-		} else {
-			*cidPointer = nil
 		}
 		return nil
 	}
@@ -77,7 +73,6 @@ func (r *repo) dagScanScanner(sqlScanner sqlScanner) model.DAGScanScanner {
 
 // DAGScansForUploadByStatus retrieves all DAG scans for a given upload ID and optional states.
 func (r *repo) DAGScansForUploadByStatus(ctx context.Context, uploadID id.UploadID, states ...model.DAGScanState) ([]model.DAGScan, error) {
-
 	query := `SELECT fs_entry_id, upload_id, created_at, updated_at, state, error_message, cid, kind FROM dag_scans WHERE upload_id = $1`
 	if len(states) > 0 {
 		query += " AND state IN ("
@@ -110,7 +105,16 @@ func (r *repo) DAGScansForUploadByStatus(ctx context.Context, uploadID id.Upload
 
 // DirectoryLinks retrieves link parameters for a given directory scan.
 func (r *repo) DirectoryLinks(ctx context.Context, dirScan *model.DirectoryDAGScan) ([]model.LinkParams, error) {
-	query := `SELECT fs_entries.path, nodes.size, nodes.cid FROM directory_children JOINS fs_entries ON directory_children.child_id = fs_entries.id JOINS dag_scans ON directory_children.child_id = dag_scans.fs_entry_id JOINS nodes ON dag_scans.cid = nodes.cid WHERE directory_children.parent_id = ?`
+	query := `
+		SELECT
+			fs_entries.path,
+			nodes.size,
+			nodes.cid
+		FROM directory_children
+		JOIN fs_entries ON directory_children.child_id = fs_entries.id
+		JOIN dag_scans ON directory_children.child_id = dag_scans.fs_entry_id
+		JOIN nodes ON dag_scans.cid = nodes.cid
+		WHERE directory_children.directory_id = ?`
 	rows, err := r.db.QueryContext(ctx, query, dirScan.FsEntryID())
 	if err != nil {
 		return nil, err
@@ -121,7 +125,7 @@ func (r *repo) DirectoryLinks(ctx context.Context, dirScan *model.DirectoryDAGSc
 		var path string
 		var size uint64
 		var cid cid.Cid
-		if err := rows.Scan(&path, &size, cidScanner{dst: &cid}); err != nil {
+		if err := rows.Scan(&path, &size, util.DbCid(&cid)); err != nil {
 			return nil, err
 		}
 		link := model.LinkParams{
@@ -165,8 +169,12 @@ func (r *repo) findNode(ctx context.Context, c cid.Cid, size uint64, ufsData []b
 		sourceID,
 		offset,
 	)
+	return r.getNodeFromRow(row)
+}
+
+func (r *repo) getNodeFromRow(row *sql.Row) (model.Node, error) {
 	node, err := model.ReadNodeFromDatabase(func(cid *cid.Cid, size *uint64, ufsdata *[]byte, path *string, sourceID *id.SourceID, offset *uint64) error {
-		return row.Scan(cidScanner{dst: cid}, size, ufsdata, path, sourceID, offset)
+		return row.Scan(util.DbCid(cid), size, ufsdata, path, sourceID, offset)
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -244,7 +252,7 @@ func (r *repo) FindOrCreateUnixFSNode(ctx context.Context, cid cid.Cid, size uin
 
 // GetChildScans finds scans for child nodes of a given directory scan's file system entry.
 func (r *repo) GetChildScans(ctx context.Context, directoryScans *model.DirectoryDAGScan) ([]model.DAGScan, error) {
-	query := `SELECT fs_entry_id, upload_id, created_at, updated_at, state, error_message, cid, kind FROM dag_scans JOIN directory_children ON directory_children.child_id = dag_scans.fs_entry_id WHERE directory_children.parent_id = ?`
+	query := `SELECT fs_entry_id, upload_id, created_at, updated_at, state, error_message, cid, kind FROM dag_scans JOIN directory_children ON directory_children.child_id = dag_scans.fs_entry_id WHERE directory_children.directory_id = ?`
 	rows, err := r.db.QueryContext(ctx, query, directoryScans.FsEntryID())
 	if err != nil {
 		return nil, err
@@ -265,17 +273,22 @@ func (r *repo) GetChildScans(ctx context.Context, directoryScans *model.Director
 
 // UpdateDAGScan updates a DAG scan in the repository.
 func (r *repo) UpdateDAGScan(ctx context.Context, dagScan model.DAGScan) error {
-	return model.WriteDAGScanToDatabase(dagScan, func(kind string, fsEntryID id.FSEntryID, uploadID id.UploadID, createdAt time.Time, updatedAt time.Time, errorMessage *string, state model.DAGScanState, cid *cid.Cid) error {
+	return model.WriteDAGScanToDatabase(dagScan, func(kind string, fsEntryID id.FSEntryID, uploadID id.UploadID, createdAt time.Time, updatedAt time.Time, errorMessage *string, state model.DAGScanState, cidValue cid.Cid) error {
+		if cidValue == cid.Undef {
+			log.Debugf("Updating DAG scan: fs_entry_id: %s, cid: <cid.Undef>\n", fsEntryID)
+		} else {
+			log.Debugf("Updating DAG scan: fs_entry_id: %s, cid: %v\n", fsEntryID, cidValue)
+		}
 		_, err := r.db.ExecContext(ctx,
 			`UPDATE dag_scans SET kind = ?, fs_entry_id = ?, upload_id = ?, created_at = ?, updated_at = ?, error_message = ?, state = ?, cid = ? WHERE fs_entry_id = ?`,
 			kind,
 			fsEntryID,
 			uploadID,
-			createdAt,
-			updatedAt,
+			createdAt.Unix(),
+			updatedAt.Unix(),
 			errorMessage,
 			state,
-			cid.Bytes(),
+			util.DbCid(&cidValue),
 			fsEntryID,
 		)
 		return err

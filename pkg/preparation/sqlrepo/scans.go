@@ -10,6 +10,7 @@ import (
 
 	"github.com/storacha/guppy/pkg/preparation/scans"
 	scanmodel "github.com/storacha/guppy/pkg/preparation/scans/model"
+	"github.com/storacha/guppy/pkg/preparation/sqlrepo/util"
 	"github.com/storacha/guppy/pkg/preparation/types/id"
 )
 
@@ -99,8 +100,8 @@ func (r *repo) GetScanByID(ctx context.Context, scanID id.ScanID) (*scanmodel.Sc
 			id,
 			uploadID,
 			rootID,
-			timestampScanner(createdAt),
-			timestampScanner(updatedAt),
+			util.TimestampScanner(createdAt),
+			util.TimestampScanner(updatedAt),
 			state,
 			errorMessage,
 		)
@@ -151,6 +152,7 @@ func (r *repo) FindOrCreateFile(ctx context.Context, path string, lastModified t
 // If the directory already exists, it returns the existing directory and false.
 // If the directory does not exist, it creates a new directory entry and returns it along with true.
 func (r *repo) FindOrCreateDirectory(ctx context.Context, path string, lastModified time.Time, mode fs.FileMode, checksum []byte, sourceID id.SourceID) (*scanmodel.Directory, bool, error) {
+	log.Debugf("Finding or creating directory: %s", path)
 	if !mode.IsDir() {
 		return nil, false, errors.New("cannot create a directory with file mode")
 	}
@@ -176,6 +178,7 @@ func (r *repo) FindOrCreateDirectory(ctx context.Context, path string, lastModif
 		return nil, false, fmt.Errorf("failed to persist new directory entry: %w", err)
 	}
 
+	log.Debugf("Created new directory %s: %s", path, newdir.ID())
 	return newdir, true, nil
 }
 
@@ -224,7 +227,7 @@ func (r *repo) DirectoryChildren(ctx context.Context, dir *scanmodel.Directory) 
 			return rows.Scan(
 				id,
 				path,
-				timestampScanner(lastModified),
+				util.TimestampScanner(lastModified),
 				mode,
 				size,
 				checksum,
@@ -248,7 +251,7 @@ func (r *repo) UpdateScan(ctx context.Context, scan *scanmodel.Scan) error {
 	`
 
 	return scanmodel.WriteScanToDatabase(scan, func(id id.ScanID, uploadID id.UploadID, rootID *id.FSEntryID, createdAt, updatedAt time.Time, state scanmodel.ScanState, errorMessage *string) error {
-		_, err := r.db.ExecContext(ctx, query, id, uploadID, Null(rootID), createdAt, updatedAt, state, NullString(errorMessage))
+		_, err := r.db.ExecContext(ctx, query, id, uploadID, Null(rootID), createdAt.Unix(), updatedAt.Unix(), state, NullString(errorMessage))
 		return err
 	})
 }
@@ -259,7 +262,7 @@ func (r *repo) GetFileByID(ctx context.Context, fileID id.FSEntryID) (*scanmodel
 		`SELECT id, path, last_modified, mode, size, checksum, source_id FROM fs_entries WHERE id = ?`, fileID,
 	)
 	file, err := scanmodel.ReadFSEntryFromDatabase(func(id *id.FSEntryID, path *string, lastModified *time.Time, mode *fs.FileMode, size *uint64, checksum *[]byte, sourceID *id.SourceID) error {
-		return row.Scan(id, path, lastModified, mode, size, checksum, sourceID)
+		return row.Scan(id, path, util.TimestampScanner(lastModified), mode, size, checksum, sourceID)
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -306,7 +309,7 @@ func (r *repo) findFSEntry(ctx context.Context, path string, lastModified time.T
 		return row.Scan(
 			id,
 			path,
-			timestampScanner(lastModified),
+			util.TimestampScanner(lastModified),
 			mode,
 			size,
 			checksum,
