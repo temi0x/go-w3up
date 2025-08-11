@@ -11,6 +11,7 @@ import (
 )
 
 var DefaultConnection uclient.Connection
+var DefaultReceiptsURL *url.URL
 
 func init() {
 	// service URL & DID
@@ -34,4 +35,5 @@ func init() {
 	}
 
 	DefaultConnection = conn
+	DefaultReceiptsURL = serviceURL.JoinPath("receipt")
 }
