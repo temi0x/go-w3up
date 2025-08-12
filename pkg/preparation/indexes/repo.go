@@ -19,11 +19,11 @@ type Repo interface {
 	// Track block positions in shards
 	AddShardBlock(ctx context.Context, shardID id.ShardID, blockCID cid.Cid, offset, size uint64) error
 	GetShardBlocks(ctx context.Context, shardID id.ShardID) ([]*model.ShardBlock, error)
-	
+
 	// Index manifest operations
 	SaveIndexManifest(ctx context.Context, uploadID id.UploadID, manifestJSON []byte) error
 	GetIndexManifest(ctx context.Context, uploadID id.UploadID) (*model.IndexManifest, error)
-	
+
 	// Get shards for an upload
 	GetShardsForUpload(ctx context.Context, uploadID id.UploadID) ([]ShardInfo, error)
 }

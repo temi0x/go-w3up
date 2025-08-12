@@ -36,29 +36,29 @@ func (r *repo) GetShardBlocks(ctx context.Context, shardID id.ShardID) ([]*model
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var blocks []*model.ShardBlock
 	for rows.Next() {
 		var cidBytes []byte
 		var offset, size uint64
-		
+
 		if err := rows.Scan(&cidBytes, &offset, &size); err != nil {
 			return nil, err
 		}
-		
+
 		blockCID, err := cid.Cast(cidBytes)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		block, err := model.NewShardBlock(blockCID, offset, size)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		blocks = append(blocks, block)
 	}
-	
+
 	return blocks, rows.Err()
 }
 
@@ -78,7 +78,7 @@ func (r *repo) GetIndexManifest(ctx context.Context, uploadID id.UploadID) (*mod
 		FROM index_manifests 
 		WHERE upload_id = ?`,
 		uploadID)
-	
+
 	var manifestJSON string
 	err := row.Scan(&manifestJSON)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -87,7 +87,7 @@ func (r *repo) GetIndexManifest(ctx context.Context, uploadID id.UploadID) (*mod
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return model.FromJSON([]byte(manifestJSON))
 }
 
@@ -102,16 +102,16 @@ func (r *repo) GetShardsForUpload(ctx context.Context, uploadID id.UploadID) ([]
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var shards []indexes.ShardInfo
 	for rows.Next() {
 		var shardID id.ShardID
 		var cidBytes []byte
-		
+
 		if err := rows.Scan(&shardID, &cidBytes); err != nil {
 			return nil, err
 		}
-		
+
 		var shardCID cid.Cid
 		if len(cidBytes) > 0 {
 			shardCID, err = cid.Cast(cidBytes)
@@ -119,12 +119,12 @@ func (r *repo) GetShardsForUpload(ctx context.Context, uploadID id.UploadID) ([]
 				return nil, err
 			}
 		}
-		
+
 		shards = append(shards, indexes.ShardInfo{
 			ID:  shardID,
 			CID: shardCID,
 		})
 	}
-	
+
 	return shards, rows.Err()
 }

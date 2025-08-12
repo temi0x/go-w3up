@@ -11,8 +11,8 @@ import (
 
 // ShardIndex contains all blocks for a specific shard
 type ShardIndex struct {
-	ShardCID string            `json:"shard_cid"`
-	Blocks   []ShardBlockJSON  `json:"blocks"`
+	ShardCID string           `json:"shard_cid"`
+	Blocks   []ShardBlockJSON `json:"blocks"`
 }
 
 // Remove the duplicate ShardBlock definition since it's now in shard_block.go

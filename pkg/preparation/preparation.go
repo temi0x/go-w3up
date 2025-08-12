@@ -11,6 +11,7 @@ import (
 	"github.com/storacha/guppy/pkg/preparation/configurations"
 	configurationsmodel "github.com/storacha/guppy/pkg/preparation/configurations/model"
 	"github.com/storacha/guppy/pkg/preparation/dags"
+	"github.com/storacha/guppy/pkg/preparation/indexes"
 	"github.com/storacha/guppy/pkg/preparation/scans"
 	scansmodel "github.com/storacha/guppy/pkg/preparation/scans/model"
 	"github.com/storacha/guppy/pkg/preparation/scans/walker"
@@ -20,8 +21,6 @@ import (
 	"github.com/storacha/guppy/pkg/preparation/types/id"
 	"github.com/storacha/guppy/pkg/preparation/uploads"
 	uploadsmodel "github.com/storacha/guppy/pkg/preparation/uploads/model"
-	"github.com/storacha/guppy/pkg/preparation/indexes"
-
 )
 
 var log = logging.Logger("preparation")
@@ -33,8 +32,7 @@ type Repo interface {
 	scans.Repo
 	dags.Repo
 	shards.Repo
-	indexes.Repo 
-
+	indexes.Repo
 }
 
 type API struct {
@@ -43,7 +41,7 @@ type API struct {
 	Sources        sources.API
 	DAGs           dags.API
 	Scans          scans.API
-	Indexes        indexes.API 
+	Indexes        indexes.API
 }
 
 // Option is an option configuring the API.
@@ -130,14 +128,14 @@ func NewAPI(repo Repo, options ...Option) API {
 		},
 		RestartDagScansForUpload: dagsAPI.RestartDagScansForUpload,
 		RunDagScansForUpload:     dagsAPI.RunDagScansForUpload,
-		AddNodeToUploadShards: shardsAPI.AddNodeToUploadShardsWithPosition,
+		AddNodeToUploadShards:    shardsAPI.AddNodeToUploadShardsWithPosition,
 		CloseUploadShards: func(ctx context.Context, uploadID id.UploadID) error {
 			// Close shards
 			err := shardsAPI.CloseUploadShards(ctx, uploadID)
 			if err != nil {
 				return err
 			}
-			
+
 			// Generate index after closing shards
 			return indexesAPI.GenerateIndex(ctx, uploadID)
 		},

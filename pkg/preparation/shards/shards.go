@@ -28,16 +28,13 @@ type RepoWithIndexes interface {
 	AddShardBlock(ctx context.Context, shardID id.ShardID, blockCID cid.Cid, offset, size uint64) error
 }
 
-
 // API provides methods to interact with the Shards in the repository.
 type API struct {
-	Repo RepoWithIndexes //
+	Repo        RepoWithIndexes //
 	Client      client.Client
 	Space       did.DID
 	ReceiptsURL *url.URL
-	
 }
-
 
 func (a API) AddNodeToUploadShards(ctx context.Context, uploadID id.UploadID, nodeCID cid.Cid) (bool, error) {
 	config, err := a.Repo.GetConfigurationByUploadID(ctx, uploadID)
@@ -91,7 +88,7 @@ func (a API) AddNodeToUploadShardsWithPosition(ctx context.Context, uploadID id.
 	if err != nil {
 		return false, fmt.Errorf("failed to get configuration for upload %s: %w", uploadID, err)
 	}
-	
+
 	openShards, err := a.Repo.ShardsForUploadByStatus(ctx, uploadID, model.ShardStateOpen)
 	if err != nil {
 		return false, fmt.Errorf("failed to get open shards for upload %s: %w", uploadID, err)
@@ -150,7 +147,6 @@ func (a API) AddNodeToUploadShardsWithPosition(ctx context.Context, uploadID id.
 
 	return created, nil
 }
-
 
 func (a *API) roomInShard(ctx context.Context, shard *model.Shard, nodeCID cid.Cid, config *configmodel.Configuration) (bool, error) {
 	node, err := a.Repo.FindNodeByCid(ctx, nodeCID)
