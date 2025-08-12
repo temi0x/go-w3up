@@ -20,6 +20,8 @@ import (
 	"github.com/storacha/guppy/pkg/preparation/types/id"
 	"github.com/storacha/guppy/pkg/preparation/uploads"
 	uploadsmodel "github.com/storacha/guppy/pkg/preparation/uploads/model"
+	"github.com/storacha/guppy/pkg/preparation/indexes"
+
 )
 
 var log = logging.Logger("preparation")
@@ -31,6 +33,8 @@ type Repo interface {
 	scans.Repo
 	dags.Repo
 	shards.Repo
+	indexes.Repo 
+
 }
 
 type API struct {
@@ -39,6 +43,7 @@ type API struct {
 	Sources        sources.API
 	DAGs           dags.API
 	Scans          scans.API
+	Indexes        indexes.API 
 }
 
 // Option is an option configuring the API.
@@ -49,6 +54,7 @@ type config struct {
 }
 
 func NewAPI(repo Repo, options ...Option) API {
+
 	cfg := &config{
 		getLocalFSForPathFn: func(path string) (fs.FS, error) { return os.DirFS(path), nil },
 	}
@@ -90,6 +96,10 @@ func NewAPI(repo Repo, options ...Option) API {
 		Repo: repo,
 	}
 
+	indexesAPI := indexes.API{
+		Repo: repo,
+	}
+
 	uploadsAPI = uploads.API{
 		Repo: repo,
 		RunNewScan: func(ctx context.Context, uploadID id.UploadID, fsEntryCb func(id id.FSEntryID, isDirectory bool) error) (id.FSEntryID, error) {
@@ -120,8 +130,17 @@ func NewAPI(repo Repo, options ...Option) API {
 		},
 		RestartDagScansForUpload: dagsAPI.RestartDagScansForUpload,
 		RunDagScansForUpload:     dagsAPI.RunDagScansForUpload,
-		AddNodeToUploadShards:    shardsAPI.AddNodeToUploadShards,
-		CloseUploadShards:        shardsAPI.CloseUploadShards,
+		AddNodeToUploadShards: shardsAPI.AddNodeToUploadShardsWithPosition,
+		CloseUploadShards: func(ctx context.Context, uploadID id.UploadID) error {
+			// Close shards
+			err := shardsAPI.CloseUploadShards(ctx, uploadID)
+			if err != nil {
+				return err
+			}
+			
+			// Generate index after closing shards
+			return indexesAPI.GenerateIndex(ctx, uploadID)
+		},
 	}
 
 	return API{
@@ -130,6 +149,7 @@ func NewAPI(repo Repo, options ...Option) API {
 		Sources:        sourcesAPI,
 		DAGs:           dagsAPI,
 		Scans:          scansAPI,
+		Indexes:        indexesAPI,
 	}
 }
 
