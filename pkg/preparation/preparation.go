@@ -187,7 +187,7 @@ type streamingShardCAR struct {
 	finished    bool
 }
 
-// newStreamingShardCAR creates a memory-efficient CAR reader for a shard.
+// NewStreamingShardCAR creates a memory-efficient CAR reader for a shard.
 func NewStreamingShardCAR(ctx context.Context, shard *shardsmodel.Shard, repo Repo, sourcesAPI sources.API) (io.Reader, error) {
 	nodeReader, err := dags.NewNodeReader(repo, func(ctx context.Context, sourceID id.SourceID, path string) (fs.File, error) {
 		source, err := repo.GetSourceByID(ctx, sourceID)
@@ -215,7 +215,6 @@ func NewStreamingShardCAR(ctx context.Context, shard *shardsmodel.Shard, repo Re
 		return nil, fmt.Errorf("building CAR header: %w", err)
 	}
 
-	// Get list of nodes
 	var nodes []dagsmodel.Node
 	err = repo.ForEachNode(ctx, shard.ID(), func(node dagsmodel.Node) error {
 		nodes = append(nodes, node)
@@ -238,7 +237,6 @@ func NewStreamingShardCAR(ctx context.Context, shard *shardsmodel.Shard, repo Re
 
 // Loads data on-demand based on buffer size provided by caller.
 func (s *streamingShardCAR) Read(p []byte) (n int, err error) {
-	// Return any stored streaming error first
 	if s.streamErr != nil {
 		return 0, s.streamErr
 	}
