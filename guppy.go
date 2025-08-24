@@ -2,30 +2,28 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
-	"strings"
-	"encoding/json"
-	"path/filepath"
-	"io"
-
 
 	"github.com/briandowns/spinner"
 	logging "github.com/ipfs/go-log/v2"
-	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
-	"github.com/storacha/go-ucanto/ucan"
 	"github.com/multiformats/go-multibase"
+	uploadcap "github.com/storacha/go-libstoracha/capabilities/upload"
 	"github.com/storacha/go-ucanto/core/delegation"
 	"github.com/storacha/go-ucanto/core/result"
 	"github.com/storacha/go-ucanto/principal/ed25519/signer"
+	"github.com/storacha/go-ucanto/ucan"
 	"github.com/storacha/guppy/internal/cmdutil"
 	"github.com/storacha/guppy/internal/upload"
 	"github.com/storacha/guppy/pkg/didmailto"
 	"github.com/urfave/cli/v2"
-	
 )
 
 type KeyPair struct {
@@ -272,18 +270,18 @@ func createSpaceToEmailDelegation(space *Space, email string) (delegation.Delega
 	}
 
 	capabilities := []ucan.Capability[ucan.NoCaveats]{
-		ucan.NewCapability("space/*", space.DID, ucan.NoCaveats{}),      
-		ucan.NewCapability("upload/*", space.DID, ucan.NoCaveats{}),    
-		ucan.NewCapability("store/*", space.DID, ucan.NoCaveats{}),    
-		ucan.NewCapability("index/*", space.DID, ucan.NoCaveats{}),    
-		ucan.NewCapability("filecoin/*", space.DID, ucan.NoCaveats{}), 
+		ucan.NewCapability("space/*", space.DID, ucan.NoCaveats{}),
+		ucan.NewCapability("upload/*", space.DID, ucan.NoCaveats{}),
+		ucan.NewCapability("store/*", space.DID, ucan.NoCaveats{}),
+		ucan.NewCapability("index/*", space.DID, ucan.NoCaveats{}),
+		ucan.NewCapability("filecoin/*", space.DID, ucan.NoCaveats{}),
 	}
 
 	return delegation.Delegate(
-		spaceSigner,                    
-		emailDID,                      
-		capabilities,                  
-		delegation.WithNoExpiration(), 
+		spaceSigner,
+		emailDID,
+		capabilities,
+		delegation.WithNoExpiration(),
 	)
 }
 
@@ -361,7 +359,7 @@ func spaceCreate(cCtx *cli.Context) error {
 		return fmt.Errorf("space name is required")
 	}
 
- 	if existing, _ := findSpaceByNameOrDID(spaceName); existing != nil {
+	if existing, _ := findSpaceByNameOrDID(spaceName); existing != nil {
 		return fmt.Errorf("space with name '%s' already exists", spaceName)
 	}
 
@@ -594,7 +592,7 @@ func spaceRegister(cCtx *cli.Context) error {
 
 	var space *Space
 	var err error
-	
+
 	if spaceName := cCtx.String("space"); spaceName != "" {
 		space, err = findSpaceByNameOrDID(spaceName)
 		if err != nil {
@@ -637,7 +635,7 @@ func spaceRegister(cCtx *cli.Context) error {
 		return fmt.Errorf("failed to load space config: %w", err)
 	}
 	config.Spaces[space.DID] = *space
-	
+
 	if err := saveSpaceConfig(config); err != nil {
 		return fmt.Errorf("failed to save space config: %w", err)
 	}
@@ -653,7 +651,6 @@ func spaceRegister(cCtx *cli.Context) error {
 	return nil
 }
 
-
 func spaceDelegate(cCtx *cli.Context) error {
 	email := cCtx.Args().First()
 	if email == "" {
@@ -662,7 +659,7 @@ func spaceDelegate(cCtx *cli.Context) error {
 
 	var space *Space
 	var err error
-	
+
 	if spaceName := cCtx.String("space"); spaceName != "" {
 		space, err = findSpaceByNameOrDID(spaceName)
 		if err != nil {
@@ -807,8 +804,8 @@ var spaceCommandsWithRegistration = []*cli.Command{
 				Action: spaceInfo,
 			},
 			{
-				Name:   "whoami",
-				Usage:  "Show the current space",
+				Name:  "whoami",
+				Usage: "Show the current space",
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
 						Name:  "json",
